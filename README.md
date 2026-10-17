@@ -8,6 +8,10 @@ Mark each one as **To be found**, **Indexed** or **Mastered**.
 - 27 Sprites × 7 qualities: Normal, Gold, Cheat Master, Loot Hacker, Bounty Hunter, Trick or Treat and Quack. That makes 162 trackable entries.
 - Mega Man has no special variants. Only Jonesy, Adventure, Bush, Klombo and Spooky Dash have a Quack variant. Missing combinations show as a striped "—" cell.
 - Progress is saved in the browser's `localStorage`. Use **Backup** and **Restore** (JSON) to back it up or move it to another browser.
+  - It survives browser restarts in a normal window. After the first change the app asks the browser to mark the site's storage as *persistent* (`navigator.storage.persist()`), so it isn't evicted when disk space runs low.
+  - Open tabs stay in sync, so editing in one tab never overwrites changes made in another.
+  - If the browser blocks saving entirely, a warning banner says so. Private/incognito windows and "clear site data on exit" settings still wipe it on close; no website can prevent that, so use Backup there.
+  - Storage is per address. Progress on `localhost:8095` and on the live site are separate; move it with Backup → Restore.
 - **Export** saves your collection as a PNG image or an A4 PDF. You choose which statuses to include (To be found / Indexed / Mastered, all by default). Quality columns and sprite rows with nothing to show are left out. Sprite descriptions are not included.
   Export needs the page served over http (`node serve.js`), because browsers block canvas export for `file://` pages.
 - **Share** creates a read-only link (`#share=1.<data>&by=<name>`). Opening it shows that collection in view-only mode. Nothing is saved while viewing, so the visitor's own progress is never changed. The data lives in the URL hash, which is never sent to a server. Statuses are packed 2 bits per permanent sprite ID (`window.SPRITE_IDS` in `data.js`), so **never renumber those IDs**. New sprites simply get new IDs, and old links keep working.

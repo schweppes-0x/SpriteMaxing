@@ -112,8 +112,40 @@
   }
   function save() {
     if (viewing) return; // read-only: never overwrite the visitor's own progress
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
-    catch { toast('Could not save — browser storage is unavailable.'); }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+      requestPersistence();
+    } catch {
+      showStorageWarning();
+      toast('Could not save. This browser is blocking saved data for this site.');
+    }
+  }
+
+  // ---------- keeping progress across restarts ----------
+  // Progress lives in this browser's localStorage, which survives restarts in a normal window.
+  // Browsers may still evict site data under disk pressure unless it is marked persistent, so ask
+  // once, after the first real save (Chrome/Edge decide silently; Firefox may show a prompt).
+  let persistenceRequested = false;
+  function requestPersistence() {
+    if (persistenceRequested || !navigator.storage || !navigator.storage.persist) return;
+    persistenceRequested = true;
+    navigator.storage.persisted()
+      .then(already => already || navigator.storage.persist())
+      .catch(() => {});
+  }
+  // A write/read round trip: fails when storage is disabled (strict privacy settings, some embedded browsers).
+  function storageWorks() {
+    try {
+      const k = '__spritemaxing_test';
+      localStorage.setItem(k, '1');
+      const ok = localStorage.getItem(k) === '1';
+      localStorage.removeItem(k);
+      return ok;
+    } catch { return false; }
+  }
+  function showStorageWarning() {
+    const w = document.getElementById('storageWarn');
+    if (w && !viewing) w.hidden = false;
   }
   const statusOf = slug => progress[slug] || 0;
   function setStatus(slug, value) {
@@ -592,6 +624,15 @@
   }
   // Pasting a different share link into the address bar of an open tab: start over cleanly.
   window.addEventListener('hashchange', () => location.reload());
+
+  // ---------- storage checks & multi-tab sync ----------
+  if (!viewing && !storageWorks()) showStorageWarning();
+  // Another tab saved: adopt its progress so this tab's next save can't overwrite those changes.
+  window.addEventListener('storage', e => {
+    if (viewing || e.key !== STORAGE_KEY) return;
+    progress = load();
+    rerenderAll();
+  });
 
   // ---------- init ----------
   const syncToolbarHeight = () =>

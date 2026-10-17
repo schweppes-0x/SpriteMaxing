@@ -461,3 +461,11 @@ h1 span {
 .viewing .seg { display: none; }
 .viewing .card-art { cursor: default; }
 .viewing .card:hover { transform: none; }
+
+/* ---------- storage warning (saving blocked) ---------- */
+.warn-banner {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mastered) 18%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, var(--mastered) 50%, var(--line));
+}
+.warn-banner .view-eye { background: color-mix(in srgb, var(--mastered) 22%, transparent); }
+.warn-banner .view-eye svg { fill: var(--mastered); }
