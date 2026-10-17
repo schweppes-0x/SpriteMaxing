@@ -1,0 +1,497 @@
+// Generated from datamined Chapter 7 Season 4 sprite data (fortnite.gg), cross-checked with fortnite.fandom.com.
+// Images: img/<slug>.webp (512x512).
+window.SPRITES = [
+  {
+    "id": "8-bit",
+    "name": "8-Bit",
+    "rarity": "rare",
+    "isNew": false,
+    "ability": [
+      "Find an 8-Bit Shotgun in your first chest and gain a score multiplier for it."
+    ],
+    "variants": {
+      "normal": "8-bit",
+      "gold": "gold-8-bit",
+      "cheatmaster": "cheat-master-8-bit",
+      "loothacker": "loot-hacker-8-bit",
+      "bountyhunter": "bounty-hunter-8-bit",
+      "trickortreat": "trick-or-treat-8-bit"
+    }
+  },
+  {
+    "id": "adventure",
+    "name": "Adventure",
+    "rarity": "rare",
+    "isNew": false,
+    "ability": [
+      "Upgrades a random item in the player's inventory with each Level Up!"
+    ],
+    "variants": {
+      "normal": "adventure",
+      "gold": "gold-adventure",
+      "cheatmaster": "cheat-master-adventure",
+      "loothacker": "loot-hacker-adventure",
+      "bountyhunter": "bounty-hunter-adventure",
+      "trickortreat": "trick-or-treat-adventure",
+      "quack": "quack-adventure"
+    }
+  },
+  {
+    "id": "birthday",
+    "name": "Birthday",
+    "rarity": "rare",
+    "isNew": false,
+    "ability": [
+      "Opening chests has a chance to spawn a piece of cake.",
+      "Eliminations can spawn cake at max level.",
+      "Chance to spawn cake increases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "birthday",
+      "gold": "gold-birthday",
+      "cheatmaster": "cheat-master-birthday",
+      "loothacker": "loot-hacker-birthday",
+      "bountyhunter": "bounty-hunter-birthday",
+      "trickortreat": "trick-or-treat-birthday"
+    }
+  },
+  {
+    "id": "bush",
+    "name": "Bush",
+    "rarity": "rare",
+    "isNew": false,
+    "ability": [
+      "Grants a bush on you after a duration, gain a bush on elimination at max level.",
+      "Time between bush activating decreases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "bush",
+      "gold": "gold-bush",
+      "cheatmaster": "cheat-master-bush",
+      "loothacker": "loot-hacker-bush",
+      "bountyhunter": "bounty-hunter-bush",
+      "trickortreat": "trick-or-treat-bush",
+      "quack": "quack-bush"
+    }
+  },
+  {
+    "id": "jonesy",
+    "name": "Jonesy",
+    "rarity": "rare",
+    "isNew": false,
+    "ability": [
+      "Recover some health or shields after being damaged after a short duration.",
+      "Increase amount healed with each Level Up!"
+    ],
+    "variants": {
+      "normal": "jonesy",
+      "gold": "gold-jonesy",
+      "cheatmaster": "cheat-master-jonesy",
+      "loothacker": "loot-hacker-jonesy",
+      "bountyhunter": "bounty-hunter-jonesy",
+      "trickortreat": "trick-or-treat-jonesy",
+      "quack": "quack-jonesy"
+    }
+  },
+  {
+    "id": "mega-man",
+    "name": "Mega Man",
+    "rarity": "rare",
+    "isNew": false,
+    "ability": [
+      "Slip and slide around with reduced friction while Sliding.",
+      "Slide farther with each Level Up!"
+    ],
+    "variants": {
+      "normal": "mega-man"
+    }
+  },
+  {
+    "id": "onigiri",
+    "name": "Onigiri",
+    "rarity": "rare",
+    "isNew": false,
+    "ability": [
+      "Applies Overdrive after eating or drinking a Consumable.",
+      "Overdrive lasts longer with each Level Up!"
+    ],
+    "variants": {
+      "normal": "onigiri",
+      "gold": "gold-onigiri",
+      "cheatmaster": "cheatmaster-onigiri",
+      "loothacker": "loot-hacker-onigiri",
+      "bountyhunter": "bounty-hunter-onigiri",
+      "trickortreat": "trick-or-treat-onigiri"
+    }
+  },
+  {
+    "id": "overshield",
+    "name": "Overshield",
+    "rarity": "rare",
+    "isNew": false,
+    "ability": [
+      "Grants overshield, scaling with level."
+    ],
+    "variants": {
+      "normal": "overshield",
+      "gold": "gold-overshield",
+      "cheatmaster": "cheat-master-overshield",
+      "loothacker": "loot-hacker-overshield",
+      "bountyhunter": "bounty-hunter-overshield",
+      "trickortreat": "trick-or-treat-overshield"
+    }
+  },
+  {
+    "id": "storm-scout",
+    "name": "Storm Scout",
+    "rarity": "rare",
+    "isNew": false,
+    "ability": [
+      "Applies Overdrive after taking a certain amount of storm damage.",
+      "Reveals future Storm Circles at max level.",
+      "Increases Overdrive duration with each Level Up!"
+    ],
+    "variants": {
+      "normal": "storm-scout",
+      "gold": "gold-storm-scout",
+      "cheatmaster": "cheat-master-storm-scout",
+      "loothacker": "loot-hacker-storm-scout",
+      "bountyhunter": "bounty-hunter-storm-scout",
+      "trickortreat": "trick-or-treat-storm-scout"
+    }
+  },
+  {
+    "id": "dumpster-dive",
+    "name": "Dumpster Dive",
+    "rarity": "epic",
+    "isNew": false,
+    "ability": [
+      "Food provides bonus healing.",
+      "Find food when jumping out of hiding props, and a small chance when opening containers.",
+      "Find better food with each Level Up!"
+    ],
+    "variants": {
+      "normal": "dumpster-dive",
+      "gold": "gold-dumpster-dive",
+      "cheatmaster": "cheat-master-dumpster-dive",
+      "loothacker": "loot-hacker-dumpster-dive",
+      "bountyhunter": "bounty-hunter-dumpster-dive",
+      "trickortreat": "trick-or-treat-dumpster-dive"
+    }
+  },
+  {
+    "id": "honey",
+    "name": "Honey",
+    "rarity": "epic",
+    "isNew": true,
+    "ability": [
+      "Chance to spawn bees at the hit location upon dealing damage with a ranged weapon"
+    ],
+    "variants": {
+      "normal": "honey",
+      "gold": "gold-honey",
+      "cheatmaster": "cheatmaster-honey",
+      "loothacker": "loot-hacker-honey",
+      "bountyhunter": "bounty-hunter-honey",
+      "trickortreat": "trick-or-treat-honey"
+    }
+  },
+  {
+    "id": "morgana",
+    "name": "Morgana",
+    "rarity": "epic",
+    "isNew": false,
+    "ability": [
+      "Increases the effectiveness of healing items.",
+      "Healing effectiveness increases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "morgana",
+      "gold": "gold-morgana",
+      "cheatmaster": "cheat-master-morgana",
+      "loothacker": "loot-hacker-morgana",
+      "bountyhunter": "bounty-hunter-morgana",
+      "trickortreat": "trick-or-treat-morgana"
+    }
+  },
+  {
+    "id": "pond",
+    "name": "Pond",
+    "rarity": "epic",
+    "isNew": false,
+    "ability": [
+      "(Active) - Jump shortly after landing to trigger a Super Jump, if charges are present.",
+      "Gain charges over time.",
+      "Super jump strength increases and cooldown decreases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "pond",
+      "gold": "gold-pond",
+      "cheatmaster": "cheat-master-pond",
+      "loothacker": "loot-hacker-pond",
+      "bountyhunter": "bounty-hunter-pond",
+      "trickortreat": "trick-or-treat-pond"
+    }
+  },
+  {
+    "id": "shadow",
+    "name": "Shadow",
+    "rarity": "epic",
+    "isNew": false,
+    "ability": [
+      "Automatically reload unequipped weapons over time.",
+      "Reloads equipped weapon at max level.",
+      "Automatic reload gets faster with each Level Up!"
+    ],
+    "variants": {
+      "normal": "shadow",
+      "gold": "gold-shadow",
+      "cheatmaster": "cheat-master-shadow",
+      "loothacker": "loot-hacker-shadow",
+      "bountyhunter": "bounty-hunter-shadow",
+      "trickortreat": "trick-or-treat-shadow"
+    }
+  },
+  {
+    "id": "sonic",
+    "name": "Sonic",
+    "rarity": "epic",
+    "isNew": false,
+    "ability": [
+      "Gotta Go Fast!",
+      "Sprint faster with each Level Up!"
+    ],
+    "variants": {
+      "normal": "sonic",
+      "gold": "gold-sonic",
+      "cheatmaster": "cheat-master-sonic",
+      "loothacker": "loot-hacker-sonic",
+      "bountyhunter": "bounty-hunter-sonic",
+      "trickortreat": "trick-or-treat-sonic"
+    }
+  },
+  {
+    "id": "tails",
+    "name": "Tails",
+    "rarity": "epic",
+    "isNew": false,
+    "ability": [
+      "(Active - Jump In Air) Hover with the help of Tails!",
+      "Hover speed increased with each Level Up!"
+    ],
+    "variants": {
+      "normal": "tails",
+      "gold": "gold-tails",
+      "cheatmaster": "cheat-master-tails",
+      "loothacker": "loot-hacker-tails",
+      "bountyhunter": "bounty-hunter-tails",
+      "trickortreat": "trick-or-treat-tails"
+    }
+  },
+  {
+    "id": "blinky",
+    "name": "Blinky",
+    "rarity": "legendary",
+    "isNew": false,
+    "ability": [
+      "Grants cloak for a duration when you take damage.",
+      "Cloak duration increases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "blinky",
+      "gold": "gold-blinky",
+      "cheatmaster": "cheat-master-blinky",
+      "loothacker": "loot-hacker-blinky",
+      "bountyhunter": "bounty-hunter-blinky",
+      "trickortreat": "trick-or-treat-blinky"
+    }
+  },
+  {
+    "id": "crash-bandicoot",
+    "name": "Crash Bandicoot",
+    "rarity": "legendary",
+    "isNew": false,
+    "ability": [
+      "(Active - Jump In Air) Triggers a whirlwind attack, damaging and knocking back nearby enemies.",
+      "Damage increases and cooldown decreases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "crash-bandicoot",
+      "gold": "gold-crash-bandicoot",
+      "cheatmaster": "cheat-master-crash-bandicoot",
+      "loothacker": "loot-hacker-crash-bandicoot",
+      "bountyhunter": "bounty-hunter-crash-bandicoot",
+      "trickortreat": "trick-or-treat-crash-bandicoot"
+    }
+  },
+  {
+    "id": "jackrabbit",
+    "name": "Jackrabbit",
+    "rarity": "legendary",
+    "isNew": false,
+    "ability": [
+      "(Active - Jump In Air) Double Jump.",
+      "Cooldown between jumps decreases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "jackrabbit",
+      "gold": "gold-jackrabbit",
+      "cheatmaster": "cheat-master-jackrabbit",
+      "loothacker": "loot-hacker-jackrabbit",
+      "bountyhunter": "bounty-hunter-jackrabbit",
+      "trickortreat": "trick-or-treat-jackrabbit"
+    }
+  },
+  {
+    "id": "killswitch",
+    "name": "Killswitch",
+    "rarity": "legendary",
+    "isNew": false,
+    "ability": [
+      "(Active - Aim In Air) Enter Hangtime with improved accuracy.",
+      "Accuracy increases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "killswitch",
+      "gold": "gold-killswitch",
+      "cheatmaster": "cheat-master-killswitch",
+      "loothacker": "loot-hacker-killswitch",
+      "bountyhunter": "bounty-hunter-killswitch",
+      "trickortreat": "trick-or-treat-killswitch"
+    }
+  },
+  {
+    "id": "the-deer",
+    "name": "The Deer",
+    "rarity": "legendary",
+    "isNew": false,
+    "ability": [
+      "Melee attacks deal more damage.",
+      "Melee attack damage increases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "the-deer",
+      "gold": "gold-the-deer",
+      "cheatmaster": "cheatmaster-the-deer",
+      "loothacker": "loot-hacker-the-deer",
+      "bountyhunter": "bounty-hunter-the-deer",
+      "trickortreat": "trick-or-treat-the-deer"
+    }
+  },
+  {
+    "id": "vampire",
+    "name": "Vampire",
+    "rarity": "legendary",
+    "isNew": false,
+    "ability": [
+      "Recover health when damaging an enemy.",
+      "Health recovered percent increases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "vampire",
+      "gold": "gold-vampire",
+      "cheatmaster": "cheatmaster-vampire",
+      "loothacker": "loot-hacker-vampire",
+      "bountyhunter": "bounty-hunter-vampire",
+      "trickortreat": "trick-or-treat-vampire"
+    }
+  },
+  {
+    "id": "x-ray",
+    "name": "X-Ray",
+    "rarity": "legendary",
+    "isNew": false,
+    "ability": [
+      "Periodically mark enemies in an area around you.",
+      "Mark more often with each Level Up!"
+    ],
+    "variants": {
+      "normal": "x-ray",
+      "gold": "gold-x-ray",
+      "cheatmaster": "cheatmaster-x-ray",
+      "loothacker": "loot-hacker-x-ray",
+      "bountyhunter": "bounty-hunter-x-ray",
+      "trickortreat": "trick-or-treat-x-ray"
+    }
+  },
+  {
+    "id": "crown",
+    "name": "Crown",
+    "rarity": "mythic",
+    "isNew": false,
+    "ability": [
+      "Only levels up by winning matches while equipped.",
+      "Mastery with 1 win.",
+      "New variants unlocked after mastering!"
+    ],
+    "variants": {
+      "normal": "crown",
+      "gold": "gold-crown",
+      "cheatmaster": "cheat-master-crown",
+      "loothacker": "loot-hacker-crown",
+      "bountyhunter": "bounty-hunter-crown",
+      "trickortreat": "trick-or-treat-crown"
+    }
+  },
+  {
+    "id": "klombo",
+    "name": "Klombo",
+    "rarity": "mythic",
+    "isNew": false,
+    "ability": [
+      "Grants random items at each level, only levels up by consuming items.",
+      "Item quality increases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "klombo",
+      "gold": "gold-klombo",
+      "cheatmaster": "cheat-master-klombo",
+      "loothacker": "loot-hacker-klombo",
+      "bountyhunter": "bounty-hunter-klombo",
+      "trickortreat": "trick-or-treat-klombo",
+      "quack": "quack-klombo"
+    }
+  },
+  {
+    "id": "one-wish-willow",
+    "name": "One Wish Willow",
+    "rarity": "mythic",
+    "isNew": true,
+    "ability": [
+      "Extract other players equipped Sprites when eliminating them.",
+      "Push everything away when damaged.",
+      "Gets upset when removed and marks you on the map"
+    ],
+    "variants": {
+      "normal": "one-wish-willow",
+      "gold": "gold-one-wish-willow",
+      "cheatmaster": "cheatmaster-one-wish-willow",
+      "loothacker": "loot-hacker-one-wish-willow",
+      "bountyhunter": "bounty-hunter-one-wish-willow",
+      "trickortreat": "trick-or-treat-one-wish-willow"
+    }
+  },
+  {
+    "id": "spooky-dash",
+    "name": "Spooky Dash",
+    "rarity": "mythic",
+    "isNew": false,
+    "ability": [
+      "(Active - Jump In Air) Spooky Dash lets you phase through some objects.",
+      "Gain charges over time.",
+      "Charge cooldown decreases with each Level Up!"
+    ],
+    "variants": {
+      "normal": "spooky-dash",
+      "gold": "gold-spooky-dash",
+      "cheatmaster": "cheat-master-spooky-dash",
+      "loothacker": "loot-hacker-spooky-dash",
+      "bountyhunter": "bounty-hunter-spooky-dash",
+      "trickortreat": "trick-or-treat-spooky-dash",
+      "quack": "quack-spooky-dash"
+    }
+  }
+];
+
+// Permanent fortnite.gg sprite IDs, used by share links. Never renumber; new sprites just get new IDs.
+window.SPRITE_IDS = {"overshield":83,"cheat-master-overshield":85,"gold-overshield":88,"loot-hacker-overshield":91,"mega-man":92,"x-ray":93,"cheatmaster-x-ray":94,"gold-x-ray":95,"loot-hacker-x-ray":96,"onigiri":97,"cheatmaster-onigiri":98,"gold-onigiri":100,"loot-hacker-onigiri":101,"loot-hacker-jackrabbit":102,"loot-hacker-tails":103,"loot-hacker-shadow":104,"loot-hacker-bush":105,"loot-hacker-killswitch":107,"loot-hacker-adventure":108,"loot-hacker-klombo":109,"loot-hacker-jonesy":110,"loot-hacker-sonic":114,"loot-hacker-crown":115,"loot-hacker-8-bit":117,"loot-hacker-storm-scout":118,"bounty-hunter-jackrabbit":119,"blinky":120,"cheat-master-blinky":121,"gold-blinky":122,"loot-hacker-blinky":123,"bounty-hunter-blinky":124,"bounty-hunter-overshield":125,"birthday":127,"gold-birthday":131,"cheat-master-birthday":132,"loot-hacker-birthday":133,"bounty-hunter-birthday":134,"crash-bandicoot":135,"cheat-master-crash-bandicoot":136,"gold-crash-bandicoot":137,"loot-hacker-crash-bandicoot":143,"bounty-hunter-crash-bandicoot":144,"pond":147,"jackrabbit":161,"gold-jackrabbit":162,"cheat-master-jackrabbit":163,"shadow":164,"cheat-master-shadow":165,"gold-shadow":166,"bush":167,"cheat-master-bush":168,"gold-bush":169,"tails":170,"cheat-master-tails":171,"gold-tails":172,"killswitch":173,"cheat-master-killswitch":174,"gold-killswitch":175,"adventure":176,"cheat-master-adventure":177,"gold-adventure":178,"klombo":179,"cheat-master-klombo":180,"gold-klombo":181,"jonesy":182,"cheat-master-jonesy":183,"gold-jonesy":184,"sonic":185,"cheat-master-sonic":186,"gold-sonic":187,"crown":188,"cheat-master-crown":189,"gold-crown":190,"8-bit":191,"cheat-master-8-bit":192,"gold-8-bit":193,"storm-scout":194,"cheat-master-storm-scout":195,"gold-storm-scout":196,"cheat-master-pond":197,"gold-pond":198,"loot-hacker-pond":199,"bounty-hunter-pond":200,"bounty-hunter-x-ray":201,"bounty-hunter-onigiri":202,"bounty-hunter-tails":203,"bounty-hunter-shadow":204,"bounty-hunter-bush":205,"bounty-hunter-killswitch":206,"bounty-hunter-adventure":207,"bounty-hunter-klombo":208,"bounty-hunter-jonesy":209,"bounty-hunter-sonic":210,"bounty-hunter-crown":211,"bounty-hunter-8-bit":212,"morgana":213,"cheat-master-morgana":214,"gold-morgana":215,"loot-hacker-morgana":216,"bounty-hunter-morgana":217,"bounty-hunter-storm-scout":218,"spooky-dash":219,"cheat-master-spooky-dash":220,"gold-spooky-dash":221,"loot-hacker-spooky-dash":222,"bounty-hunter-spooky-dash":223,"trick-or-treat-spooky-dash":224,"trick-or-treat-jackrabbit":225,"vampire":226,"cheatmaster-vampire":227,"gold-vampire":228,"loot-hacker-vampire":229,"bounty-hunter-vampire":230,"trick-or-treat-vampire":231,"trick-or-treat-blinky":232,"trick-or-treat-overshield":233,"trick-or-treat-birthday":234,"trick-or-treat-crash-bandicoot":235,"trick-or-treat-pond":236,"trick-or-treat-x-ray":237,"trick-or-treat-tails":238,"trick-or-treat-shadow":239,"trick-or-treat-bush":240,"trick-or-treat-killswitch":241,"trick-or-treat-adventure":242,"trick-or-treat-crown":243,"trick-or-treat-jonesy":244,"trick-or-treat-sonic":245,"trick-or-treat-8-bit":246,"trick-or-treat-storm-scout":247,"trick-or-treat-morgana":248,"the-deer":249,"cheatmaster-the-deer":250,"gold-the-deer":251,"loot-hacker-the-deer":252,"bounty-hunter-the-deer":253,"trick-or-treat-the-deer":254,"trick-or-treat-onigiri":255,"dumpster-dive":256,"cheat-master-dumpster-dive":257,"gold-dumpster-dive":258,"loot-hacker-dumpster-dive":259,"bounty-hunter-dumpster-dive":260,"trick-or-treat-dumpster-dive":261,"trick-or-treat-klombo":262,"quack-bush":263,"quack-adventure":264,"quack-klombo":265,"quack-jonesy":266,"honey":267,"cheatmaster-honey":268,"gold-honey":269,"loot-hacker-honey":270,"bounty-hunter-honey":271,"trick-or-treat-honey":272,"one-wish-willow":273,"cheatmaster-one-wish-willow":274,"gold-one-wish-willow":275,"loot-hacker-one-wish-willow":276,"bounty-hunter-one-wish-willow":277,"trick-or-treat-one-wish-willow":278,"quack-spooky-dash":279};

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpriteMaxing</title>
+  <meta name="description" content="Track every Fortnite Chapter 7 Season 4 Sprite and variant: To be found, Indexed, Mastered.">
+  <link rel="icon" href="img/klombo.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <img src="img/klombo.webp" alt="" class="brand-icon">
+      <div>
+        <h1>Sprite<span>Maxing</span></h1>
+        <p class="sub">Fortnite Chapter 7 · Season 4 Sprite tracker</p>
+      </div>
+    </div>
+    <div class="totals" id="totals"></div>
+  </header>
+
+  <div class="view-banner" id="viewBanner" hidden>
+    <span class="view-eye" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 5C6.5 5 2.7 9.1 1.5 12c1.2 2.9 5 7 10.5 7s9.3-4.1 10.5-7C21.3 9.1 17.5 5 12 5Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-2.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>
+    </span>
+    <div class="view-text">
+      <b id="viewWho">A shared collection</b>
+      <span>View only. Your own tracked progress is safe and unchanged.</span>
+    </div>
+    <button type="button" class="btn btn-primary" id="viewExit">Back to my collection</button>
+  </div>
+
+  <section class="toolbar">
+    <label class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.41-1.41-4.43-4.43A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"/></svg>
+      <input id="search" type="search" placeholder="Search sprites…" autocomplete="off">
+    </label>
+    <div class="chips" id="rarityChips" role="group" aria-label="Filter by rarity"></div>
+    <div class="chips" id="statusChips" role="group" aria-label="Filter by status"></div>
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="exportBtn" aria-haspopup="dialog" title="Save your collection as an image or PDF">Export</button>
+      <button type="button" class="btn" id="shareBtn" aria-haspopup="dialog" title="Get a read-only link to your collection">Share</button>
+      <button type="button" class="btn" id="backupBtn" title="Download your progress as a JSON backup file">Backup</button>
+      <label class="btn" id="restoreBtn" title="Restore progress from a JSON backup file">Restore<input type="file" id="importFile" accept="application/json,.json" hidden></label>
+      <button type="button" class="btn btn-danger" id="resetBtn">Reset</button>
+    </div>
+  </section>
+
+  <p class="hint">Click a card to cycle <b>To be found → Indexed → Mastered</b>, or use the buttons under it. Tap the <b>i</b> next to a quality (Normal, Gold, …) to see what bonus it gives. Progress is saved in this browser.</p>
+
+  <main class="table-wrap">
+    <table class="grid" id="grid">
+      <thead id="gridHead"></thead>
+      <tbody id="gridBody"></tbody>
+    </table>
+    <p class="empty" id="empty" hidden>No sprites match these filters.</p>
+  </main>
+
+  <footer class="foot">
+    Sprite data and icons datamined from the game files via <a href="https://fortnite.gg/sprites" target="_blank" rel="noopener">fortnite.gg</a>, cross-checked against the <a href="https://fortnite.fandom.com/wiki/Sprites" target="_blank" rel="noopener">Fortnite Wiki</a>. Fortnite is a trademark of Epic Games; this is an unofficial fan tool.
+  </footer>
+
+  <dialog class="info-dialog" id="infoDialog" aria-labelledby="infoTitle">
+    <div class="info-panel">
+      <button type="button" class="info-close" id="infoClose" aria-label="Close">&times;</button>
+      <div id="infoBody"></div>
+      <nav class="info-nav">
+        <button type="button" class="btn" id="infoPrev"></button>
+        <button type="button" class="btn" id="infoNext"></button>
+      </nav>
+    </div>
+  </dialog>
+
+  <dialog class="info-dialog export-dialog" id="exportDialog" aria-labelledby="exportTitle">
+    <form class="info-panel" id="exportForm">
+      <button type="button" class="info-close" data-close aria-label="Close">&times;</button>
+      <span class="info-kicker">Share your progress</span>
+      <h2 class="info-title" id="exportTitle">Export collection</h2>
+
+      <fieldset class="ex-group">
+        <legend>Include sprites that are</legend>
+        <label class="ex-check s-missing"><input type="checkbox" name="inc" value="missing" checked><span class="ex-box" aria-hidden="true"></span><span class="ex-text">To be found</span><span class="ex-count" data-count="missing"></span></label>
+        <label class="ex-check s-indexed"><input type="checkbox" name="inc" value="indexed" checked><span class="ex-box" aria-hidden="true"></span><span class="ex-text">Indexed</span><span class="ex-count" data-count="indexed"></span></label>
+        <label class="ex-check s-mastered"><input type="checkbox" name="inc" value="mastered" checked><span class="ex-box" aria-hidden="true"></span><span class="ex-text">Mastered</span><span class="ex-count" data-count="mastered"></span></label>
+      </fieldset>
+
+      <fieldset class="ex-group">
+        <legend>Format</legend>
+        <div class="ex-formats">
+          <label class="ex-format"><input type="radio" name="fmt" value="png" checked><span class="ex-format-card"><b>Image</b><small>One PNG, great for sharing</small></span></label>
+          <label class="ex-format"><input type="radio" name="fmt" value="pdf"><span class="ex-format-card"><b>PDF</b><small>A4 pages, ready to print</small></span></label>
+        </div>
+      </fieldset>
+
+      <p class="ex-summary" id="exportSummary" aria-live="polite"></p>
+      <div class="info-nav">
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" id="exportGo">Export</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="info-dialog confirm-dialog" id="confirmDialog" aria-labelledby="confirmTitle">
+    <div class="info-panel">
+      <button type="button" class="info-close" data-close aria-label="Close">&times;</button>
+      <span class="info-kicker" id="confirmKicker"></span>
+      <h2 class="info-title" id="confirmTitle"></h2>
+      <div id="confirmBody"></div>
+      <div class="info-nav">
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="button" class="btn" id="confirmOk"></button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="info-dialog share-dialog" id="shareDialog" aria-labelledby="shareTitle">
+    <div class="info-panel">
+      <button type="button" class="info-close" data-close aria-label="Close">&times;</button>
+      <span class="info-kicker">Read-only link</span>
+      <h2 class="info-title" id="shareTitle">Share collection</h2>
+      <p class="info-detail">Anyone with this link sees your collection in view-only mode. Opening it never changes their own tracked progress.</p>
+      <label class="field">
+        <span>Your name <small>(optional, shown to whoever opens it)</small></span>
+        <input type="text" id="shareName" maxlength="24" placeholder="e.g. Jonesy" autocomplete="off">
+      </label>
+      <div class="share-row">
+        <input type="text" id="shareLink" readonly aria-label="Share link">
+        <button type="button" class="btn btn-primary" id="shareCopy">Copy</button>
+      </div>
+      <p class="info-count" id="shareStats"></p>
+      <p class="share-warn" id="shareWarn" hidden>Heads up: this link points to your local copy (localhost), so it only opens on this PC until SpriteMaxing is hosted online.</p>
+      <div class="info-nav">
+        <button type="button" class="btn" data-close>Done</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+  <script src="export.js"></script>
+</body>
+</html>
