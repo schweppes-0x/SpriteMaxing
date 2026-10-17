@@ -13,6 +13,9 @@
   const MIN_W = 780;
   const A4_RATIO = 841.89 / 595.28;
 
+  const SITE_URL = 'https://schweppes-0x.github.io/SpriteMaxing/';
+  const SITE_LABEL = 'schweppes-0x.github.io/SpriteMaxing';
+
   const keyOf = slug => STATUSES[statusOf(slug)].key;
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   function rgba(hex, a) {
@@ -118,6 +121,12 @@
     ctx.font = `600 12px ${BODY}`;
     ctx.fillText(`Showing: ${shown}  ·  ${sel.cards} card${sel.cards === 1 ? '' : 's'}`, x, y + 84);
 
+    // Site link, so anyone who sees the export can find the tracker.
+    ctx.font = `700 13px ${BODY}`;
+    ctx.fillStyle = t.indexed;
+    ctx.fillText(SITE_LABEL, x, y + 106);
+    const linkW = ctx.measureText(SITE_LABEL).width;
+
     // totals over the whole collection, right aligned
     const all = sprites.flatMap(s => Object.values(s.variants));
     const idx = all.filter(sl => statusOf(sl) >= 1).length;
@@ -134,6 +143,7 @@
     ctx.fillStyle = t.muted;
     ctx.fillText(new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }), W - PAD, y + 76);
     ctx.textAlign = 'left';
+    return { x, y: y + 92, w: linkW, h: 18 }; // clickable area of the site link (CSS px), used by the PDF
   }
 
   function cellX(x0, i) { return x0 + LABEL_W + GAP + i * (CELL_W + GAP); }
@@ -309,7 +319,8 @@
     const tableW = LABEL_W + sel.cols.length * (CELL_W + GAP);
     const x0 = Math.round((W - tableW) / 2);
     let y = PAD;
-    if (title) { drawTitle(ctx, W, y, sel, t); y += TITLE_H; }
+    if (title) { canvas.linkBox = drawTitle(ctx, W, y, sel, t); y += TITLE_H; }
+    canvas.sheetW = W;
     drawColHeads(ctx, x0, y, sel, t);
     y += COLHEAD_H;
     for (const s of rows) { drawRow(ctx, x0, y, s, sel, t); y += ROW_H; }
@@ -333,13 +344,16 @@
     const obj = (id, write) => { offsets[id] = len; push(`${id} 0 obj\n`); write(); push('\nendobj\n'); };
     const PW = 595.28, PH = 841.89;
     const pageId = i => 3 + i * 3, contentId = i => 4 + i * 3, imageId = i => 5 + i * 3;
-    const count = 2 + pages.length * 3;
+    // Pages with a `link` ({ rect: [x1, y1, x2, y2] in PDF points, url }) get a clickable URI annotation.
+    let nextId = 3 + pages.length * 3;
+    const annotId = pages.map(p => (p.link ? nextId++ : null));
+    const count = nextId - 1;
 
     push('%PDF-1.4\n');
     obj(1, () => push('<< /Type /Catalog /Pages 2 0 R >>'));
     obj(2, () => push(`<< /Type /Pages /Kids [${pages.map((_, i) => `${pageId(i)} 0 R`).join(' ')}] /Count ${pages.length} >>`));
     pages.forEach((p, i) => {
-      obj(pageId(i), () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im0 ${imageId(i)} 0 R >> >> /Contents ${contentId(i)} 0 R >>`));
+      obj(pageId(i), () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im0 ${imageId(i)} 0 R >> >> /Contents ${contentId(i)} 0 R${annotId[i] ? ` /Annots [${annotId[i]} 0 R]` : ''} >>`));
       const draw = `q ${PW} 0 0 ${PH} 0 0 cm /Im0 Do Q`;
       obj(contentId(i), () => push(`<< /Length ${draw.length} >>\nstream\n${draw}\nendstream`));
       obj(imageId(i), () => {
@@ -348,11 +362,27 @@
         push('\nendstream');
       });
     });
+    pages.forEach((p, i) => {
+      if (!p.link) return;
+      const r = p.link.rect.map(n => n.toFixed(2)).join(' ');
+      obj(annotId[i], () => push(`<< /Type /Annot /Subtype /Link /Rect [${r}] /Border [0 0 0] /A << /S /URI /URI (${p.link.url}) >> >>`));
+    });
     const xref = len;
     let table = `xref\n0 ${count + 1}\n0000000000 65535 f \n`;
     for (let id = 1; id <= count; id++) table += `${String(offsets[id]).padStart(10, '0')} 00000 n \n`;
     push(`${table}trailer\n<< /Size ${count + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
     return new Blob(chunks, { type: 'application/pdf' });
+  }
+
+  // Converts the canvas link box (CSS px, top-left origin) to a PDF rect (points, bottom-left origin).
+  function pdfLink(canvas) {
+    const b = canvas.linkBox;
+    if (!b) return null;
+    const PW = 595.28, PH = 841.89, s = PW / canvas.sheetW, pad = 3;
+    return {
+      url: SITE_URL,
+      rect: [(b.x - pad) * s, PH - (b.y + b.h + pad) * s, (b.x + b.w + pad) * s, PH - (b.y - pad) * s],
+    };
   }
 
   function download(blob, name) {
@@ -379,7 +409,7 @@
     for (let i = 0; i < chunks.length; i++) {
       const canvas = renderSheet(sel, chunks[i], { title: i === 0, page: [i + 1, chunks.length], a4: true });
       const jpeg = await toBlob(canvas, 'image/jpeg', 0.92);
-      pages.push({ jpeg: new Uint8Array(await jpeg.arrayBuffer()), w: canvas.width, h: canvas.height });
+      pages.push({ jpeg: new Uint8Array(await jpeg.arrayBuffer()), w: canvas.width, h: canvas.height, link: pdfLink(canvas) });
     }
     download(buildPdf(pages), `spritemaxing-collection-${stamp}.pdf`);
     return { kind: 'PDF', pages: pages.length };
