@@ -469,3 +469,4 @@ h1 span {
 }
 .warn-banner .view-eye { background: color-mix(in srgb, var(--mastered) 22%, transparent); }
 .warn-banner .view-eye svg { fill: var(--mastered); }
+.foot-note { margin: 8px 0 0; font-size: 11px; opacity: .8; }
