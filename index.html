@@ -10,6 +10,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <!-- Umami analytics. Only counts the live site; the URL hash (share links carry a collection and name) and query are never sent. -->
+  <script defer src="https://analytics.antondalov.com/script.js" data-website-id="035ac7ed-cdc9-4b41-8440-9da348cfd283" data-domains="schweppes-0x.github.io" data-exclude-hash="true" data-exclude-search="true"></script>
+  <script>
+    // Umami session replay. recorder.js has no domain filter, so gate it here: live site only, and not
+    // when the page was opened from someone's share link (it would record their collection and name).
+    if (location.hostname === 'schweppes-0x.github.io' && !/(^|[#&])share=/.test(location.hash)) {
+      addEventListener('load', () => {
+        const s = document.createElement('script');
+        s.src = 'https://analytics.antondalov.com/recorder.js';
+        s.dataset.websiteId = '035ac7ed-cdc9-4b41-8440-9da348cfd283';
+        document.head.append(s);
+      });
+    }
+  </script>
 </head>
 <body>
   <header class="top">
