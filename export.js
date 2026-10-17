@@ -75,7 +75,7 @@
       text: css('--text'), muted: css('--muted'), accent: css('--accent'),
       indexed: css('--indexed'), mastered: css('--mastered'),
       rarity: { rare: css('--rare'), epic: css('--epic'), legendary: css('--legendary'), mythic: css('--mythic') },
-      variant: Object.fromEntries(VARIANTS.map(v => [v.key, css(`--v-${v.key}`)])),
+      variant: Object.fromEntries(VARIANTS.map(v => [v.key, css(`--v-${v.key}`) || css('--v-extra')])),
     };
   }
   const DISPLAY = '"Chakra Petch", "Segoe UI", sans-serif';

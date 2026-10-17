@@ -19,6 +19,17 @@
     { key: 'quack', label: 'Quack', perk: 'Gives 50% of the Sprite XP it earns to the other Sprites in your inventory.',
       detail: 'Great for levelling several Sprites at once. This season only Jonesy, Adventure, Bush, Klombo and Spooky Dash have one.' },
   ];
+  // Qualities that tools/update-data.js found after this list was written: shown with a generic look.
+  for (const x of window.SPRITE_EXTRA_VARIANTS || []) {
+    if (VARIANTS.some(v => v.key === x.key)) continue;
+    VARIANTS.push({
+      key: x.key, label: x.label, extra: true,
+      perk: `A new ${x.label} quality added during the season.`,
+      detail: 'Its exact bonus isn\'t documented in SpriteMaxing yet. Check the in-game Sprite details.',
+    });
+  }
+  // CSS classes for a quality; unknown (extra) ones share the generic .v-extra colour.
+  const vClass = v => (v.extra ? `v-${v.key} v-extra` : `v-${v.key}`);
 
   // Highest rarity first; used for the row order and the rarity filter chips.
   const RARITIES = ['mythic', 'legendary', 'epic', 'rare'];
@@ -137,7 +148,7 @@
     const tr = el('tr');
     tr.append(el('th', 'col-sprite', 'Sprite'));
     for (const v of VARIANTS) {
-      const th = el('th', `col-variant v-${v.key}`);
+      const th = el('th', `col-variant ${vClass(v)}`);
       th.dataset.variant = v.key;
       const top = el('span', 'v-top');
       const info = el('button', 'v-info-btn', 'i');
@@ -162,7 +173,7 @@
     const withIt = sprites.filter(s => s.variants[v.key]);
     const samples = SAMPLE_ORDER.map(id => sprites.find(s => s.id === id)).filter(s => s && s.variants[v.key]).slice(0, 3);
 
-    dlg.className = `info-dialog v-${v.key}`;
+    dlg.className = `info-dialog ${vClass(v)}`;
     const body = $('#infoBody');
     body.innerHTML = '';
 
@@ -238,7 +249,7 @@
   }
 
   function buildCard(sprite, variant, slug) {
-    const card = el('div', `card v-${variant.key} rc-${sprite.rarity}`);
+    const card = el('div', `card ${vClass(variant)} rc-${sprite.rarity}`);
     card.dataset.slug = slug;
 
     const art = el('button', 'card-art');
@@ -386,8 +397,13 @@
   }
 
   // ---------- import / export / reset ----------
+  // Backup format v2: `progress` (slug -> status) plus `ids` (slug -> permanent sprite ID). Restore
+  // matches by slug first and falls back to the ID, so backups survive data updates and renames.
   function exportProgress() {
-    const blob = new Blob([JSON.stringify({ app: 'SpriteMaxing', season: 'C7S4', exported: new Date().toISOString(), progress }, null, 2)], { type: 'application/json' });
+    const ids = {};
+    for (const slug of Object.keys(progress)) if (SPRITE_IDS[slug] != null) ids[slug] = SPRITE_IDS[slug];
+    const backup = { app: 'SpriteMaxing', format: 2, season: 'C7S4', exported: new Date().toISOString(), progress, ids };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const a = el('a');
     a.href = URL.createObjectURL(blob);
     a.download = `spritemaxing-progress-${new Date().toISOString().slice(0, 10)}.json`;
@@ -407,14 +423,19 @@
         ? (data.progress && typeof data.progress === 'object' ? data.progress : data)
         : null;
       const known = new Set(allSlugs);
-      const meta = new Set(['app', 'season', 'exported', 'progress']);
+      const meta = new Set(['app', 'format', 'season', 'exported', 'progress', 'ids']);
+      const fileIds = data && data.ids && typeof data.ids === 'object' ? data.ids : {};
       const clean = {};
       let skipped = 0;
       if (incoming) {
         for (const [slug, raw] of Object.entries(incoming)) {
+          if (meta.has(slug)) continue;
           const v = Number(raw);
-          if (known.has(slug) && (v === 1 || v === 2)) clean[slug] = v;
-          else if (!known.has(slug) && !meta.has(slug)) skipped++;
+          if (v !== 1 && v !== 2) continue;
+          // Same name as today, or the same sprite under a newer/older name (matched by permanent ID).
+          const target = known.has(slug) ? slug : ID_TO_SLUG[fileIds[slug]];
+          if (target && known.has(target)) clean[target] = v;
+          else skipped++;
         }
       }
       const looksLikeBackup = incoming && (Object.keys(clean).length || /^Sprites?Maxing$/.test(data.app || ''));
@@ -447,7 +468,7 @@
   }
 
   function statsOf(p) {
-    const vals = Object.values(p);
+    const vals = allSlugs.map(slug => p[slug]).filter(Boolean);
     return { indexed: vals.filter(v => v >= 1).length, mastered: vals.filter(v => v === 2).length };
   }
   // Two small stat boxes: what you have now vs. what the file contains.

@@ -19,6 +19,7 @@
   --v-bountyhunter: #ff3d5a;
   --v-trickortreat: #ff8a1f;
   --v-quack: #ffe14d;
+  --v-extra: #c9a7ff; /* qualities added mid-season that the app has no colour for yet */
 
   --indexed: #b8f23c;
   --mastered: #ffb020;
@@ -214,6 +215,7 @@ h1 span {
 .v-bountyhunter { --vc: var(--v-bountyhunter); }
 .v-trickortreat { --vc: var(--v-trickortreat); }
 .v-quack { --vc: var(--v-quack); }
+.v-extra { --vc: var(--v-extra); }
 
 .row-head {
   position: sticky; left: 0; z-index: 3;

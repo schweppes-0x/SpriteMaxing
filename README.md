@@ -28,7 +28,32 @@ Then open http://localhost:8095. Opening `index.html` directly also works.
 | `export.js` | PNG / PDF collection export (canvas renderer + a small built-in PDF writer) |
 | `data.js` | Sprite roster: name, rarity, ability text, and the image slug per variant |
 | `img/*.webp` | 512×512 transparent sprite icons |
-| `serve.js` | Zero-dependency static server |
+| `serve.js` | Zero-dependency static server (sends `Cache-Control: no-cache` so updates never mix with stale files) |
+| `tools/update-data.js` | Refreshes `data.js` and `img/` from fortnite.gg (see below) |
+
+## Updating sprite data
+
+New sprites and variants arrive mid-season. fortnite.gg only serves its pages to real browsers, so:
+
+1. Open https://fortnite.gg/sprites in your browser and press **Ctrl+S** (any "Webpage" option works).
+2. Optionally save the fortnite.gg page of each **new** sprite into the same folder, so its ability text is picked up.
+3. Preview, then apply:
+
+```bash
+node tools/update-data.js --source "path/to/Fortnite Sprites Tracker - Fortnite.GG.html" --dry-run
+```
+
+```bash
+node tools/update-data.js --source "path/to/Fortnite Sprites Tracker - Fortnite.GG.html"
+```
+
+The script reports new sprites, new variants, rarity changes and anything renamed or delisted on fortnite.gg. It downloads missing icons directly. Without `--source` it tries to download the page itself and explains these steps if that's blocked.
+
+**Compatibility guarantees:** saved progress, backups and share links keep working across updates.
+- Variants are matched by their **permanent fortnite.gg ID**. If fortnite.gg renames a sprite's URL, our slug stays the same.
+- **Nothing is removed.** Sprites that drop off fortnite.gg stay in the tracker.
+- **New quality types** (like Trick or Treat was mid-season) appear automatically with a generic lavender style. Add a colour (`--v-<key>` in `styles.css`) and perk text (`VARIANTS` in `app.js`) when the details are known.
+- **Backups (format 2)** store each entry's permanent ID next to its slug. Restore matches by slug first, then by ID, so a backup made before or after a rename still restores. Older backups without IDs keep working, and entries that match nothing are skipped and reported.
 
 ## Sources
 
