@@ -19,6 +19,8 @@
   --v-bountyhunter: #ff3d5a;
   --v-trickortreat: #ff8a1f;
   --v-quack: #ffe14d;
+  --v-fortune: #34d399;
+  --v-cursed: #a78bfa;
   --v-extra: #c9a7ff; /* qualities added mid-season that the app has no colour for yet */
 
   --indexed: #b8f23c;
@@ -215,6 +217,8 @@ h1 span {
 .v-bountyhunter { --vc: var(--v-bountyhunter); }
 .v-trickortreat { --vc: var(--v-trickortreat); }
 .v-quack { --vc: var(--v-quack); }
+.v-fortune { --vc: var(--v-fortune); }
+.v-cursed { --vc: var(--v-cursed); }
 .v-extra { --vc: var(--v-extra); }
 
 .row-head {
@@ -470,3 +474,52 @@ h1 span {
 .warn-banner .view-eye { background: color-mix(in srgb, var(--mastered) 22%, transparent); }
 .warn-banner .view-eye svg { fill: var(--mastered); }
 .foot-note { margin: 8px 0 0; font-size: 11px; opacity: .8; }
+
+/* ---------- seasons ---------- */
+.season-tabs {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 4px clamp(16px, 3vw, 40px) 10px;
+}
+.season-tabs[hidden] { display: none; }
+.season-tab {
+  display: flex; align-items: baseline; gap: 8px; cursor: pointer;
+  padding: 9px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);
+  transition: .15s;
+}
+.season-tab:hover { border-color: var(--muted); }
+.season-tab:focus-visible { outline: 2px solid var(--indexed); outline-offset: 2px; }
+.season-tab-label { font-family: var(--display); font-weight: 700; font-size: 15px; text-transform: uppercase; letter-spacing: .5px; }
+.season-tab-name { color: var(--muted); font-size: 13px; font-weight: 600; }
+.season-tab .new-tag { margin-left: 2px; vertical-align: 1px; }
+.season-tab[aria-selected="true"] {
+  border-color: var(--indexed); box-shadow: 0 0 0 1px var(--indexed);
+  background: color-mix(in srgb, var(--indexed) 12%, var(--panel));
+}
+.season-tab[aria-selected="true"] .season-tab-label { color: var(--indexed); }
+.season-note {
+  margin: 12px clamp(16px, 3vw, 40px) 0; padding: 10px 14px; border-radius: 12px;
+  font-size: 13px; line-height: 1.5; color: var(--text);
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+.season-note[hidden] { display: none; }
+.r-unknown { --rc: var(--muted); }
+.rc-unknown { --rc: var(--v-normal); }
+.compare-season { margin: 14px 0 -6px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- placeholder art (icon not datamined yet) ---------- */
+.ph {
+  width: 100%; height: 100%; display: grid; place-items: center; align-content: center; gap: 6px;
+  position: relative; transition: filter .25s ease;
+}
+.ph-mono {
+  width: 64%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+  font: 700 clamp(18px, 2.4vw, 30px) var(--display); letter-spacing: 1px; color: var(--text);
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--vc) 55%, transparent), color-mix(in srgb, var(--vc) 14%, #0f0e0c));
+  border: 2px dashed color-mix(in srgb, var(--vc) 65%, transparent);
+  box-shadow: 0 6px 14px #0008;
+}
+.ph-note { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); }
+.card[data-status="missing"] .ph { filter: grayscale(.85) brightness(.75); }
+.card[data-status="missing"]:hover .ph { filter: none; }
+.info-art .ph { width: 30%; max-width: 120px; aspect-ratio: 1; height: auto; }

@@ -1,7 +1,9 @@
 // Collection export: draws the tracker grid onto a canvas and saves it as a PNG or a multi-page A4 PDF.
 // No dependencies: the PDF is assembled by hand from one JPEG per page.
 (() => {
-  const { sprites, VARIANTS, STATUSES, statusOf, toast } = window.SpriteMaxing;
+  // SM.season / SM.sprites / SM.VARIANTS are getters: they always reflect the season tab being viewed.
+  const SM = window.SpriteMaxing;
+  const { STATUSES, statusOf, toast } = SM;
   const $ = sel => document.querySelector(sel);
   const PREF_KEY = 'spritemaxing.exportPrefs';
 
@@ -27,8 +29,8 @@
   // Keep the grid shape, but drop quality columns and sprite rows that end up with nothing in them.
   function selection(include) {
     const has = (s, v) => s.variants[v.key] && include.has(keyOf(s.variants[v.key]));
-    const cols = VARIANTS.filter(v => sprites.some(s => has(s, v)));
-    const rows = sprites.filter(s => cols.some(v => has(s, v)));
+    const cols = SM.VARIANTS.filter(v => SM.sprites.some(s => has(s, v)));
+    const rows = SM.sprites.filter(s => cols.some(v => has(s, v)));
     const cards = rows.reduce((n, s) => n + cols.filter(v => has(s, v)).length, 0);
     return { include, cols, rows, cards, has };
   }
@@ -63,7 +65,9 @@
   const loaded = new Map(); // src -> HTMLImageElement (or null if it failed), filled by prepare()
   async function prepare(sel) {
     const srcs = ['img/klombo.webp'];
-    for (const s of sel.rows) for (const v of sel.cols) if (sel.has(s, v)) srcs.push(`img/${s.variants[v.key]}.webp`);
+    for (const s of sel.rows) for (const v of sel.cols) {
+      if (sel.has(s, v) && SM.hasArt(s.variants[v.key])) srcs.push(`img/${s.variants[v.key]}.webp`);
+    }
     const fonts = ['700 20px "Chakra Petch"', '600 12px "Space Grotesk"', '400 12px "Space Grotesk"']
       .map(f => document.fonts.load(f).catch(() => null));
     const imgs = await Promise.all(srcs.map(loadImg));
@@ -77,8 +81,8 @@
       bg: css('--bg'), bg2: css('--bg-2'), panel: css('--panel'), line: css('--line'),
       text: css('--text'), muted: css('--muted'), accent: css('--accent'),
       indexed: css('--indexed'), mastered: css('--mastered'),
-      rarity: { rare: css('--rare'), epic: css('--epic'), legendary: css('--legendary'), mythic: css('--mythic') },
-      variant: Object.fromEntries(VARIANTS.map(v => [v.key, css(`--v-${v.key}`) || css('--v-extra')])),
+      rarity: { rare: css('--rare'), epic: css('--epic'), legendary: css('--legendary'), mythic: css('--mythic'), unknown: css('--muted') },
+      variant: Object.fromEntries(SM.VARIANTS.map(v => [v.key, css(`--v-${v.key}`) || css('--v-extra')])),
     };
   }
   const DISPLAY = '"Chakra Petch", "Segoe UI", sans-serif';
@@ -116,7 +120,7 @@
 
     ctx.font = `500 14px ${BODY}`;
     ctx.fillStyle = t.muted;
-    ctx.fillText('Fortnite Chapter 7 · Season 4 Sprite collection', x, y + 62);
+    ctx.fillText(`Fortnite ${SM.season.title} Sprite collection`, x, y + 62);
     const shown = STATUSES.filter(s => sel.include.has(s.key)).map(s => s.label).join(', ');
     ctx.font = `600 12px ${BODY}`;
     ctx.fillText(`Showing: ${shown}  ·  ${sel.cards} card${sel.cards === 1 ? '' : 's'}`, x, y + 84);
@@ -128,7 +132,7 @@
     const linkW = ctx.measureText(SITE_LABEL).width;
 
     // totals over the whole collection, right aligned
-    const all = sprites.flatMap(s => Object.values(s.variants));
+    const all = SM.sprites.flatMap(s => Object.values(s.variants));
     const idx = all.filter(sl => statusOf(sl) >= 1).length;
     const mas = all.filter(sl => statusOf(sl) === 2).length;
     ctx.textAlign = 'right';
@@ -183,7 +187,7 @@
   }
 
   function drawRow(ctx, x0, y, s, sel, t) {
-    const rc = t.rarity[s.rarity];
+    const rc = t.rarity[s.rarity] || t.rarity.unknown;
     // label panel with a rarity strip on the left
     ctx.save();
     ctx.beginPath(); ctx.roundRect(x0, y, LABEL_W, CELL_H, 14);
@@ -198,15 +202,17 @@
     setSpacing(ctx, 0.4);
     fitText(ctx, s.name.toUpperCase(), x0 + 18, y + 34, LABEL_W - 32, 20, 13, DISPLAY, 700);
     setSpacing(ctx, 0.6);
-    ctx.font = `700 10px ${BODY}`;
-    const label = s.rarity.toUpperCase();
-    const pw = ctx.measureText(label).width + 14;
-    ctx.beginPath(); ctx.roundRect(x0 + 18, y + 46, pw, 18, 5);
-    ctx.fillStyle = rc; ctx.fill();
-    ctx.fillStyle = '#111';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(label, x0 + 25, y + 55.5);
-    ctx.textBaseline = 'alphabetic';
+    if (s.rarity) { // brand-new seasons may not have rarities yet
+      ctx.font = `700 10px ${BODY}`;
+      const label = s.rarity.toUpperCase();
+      const pw = ctx.measureText(label).width + 14;
+      ctx.beginPath(); ctx.roundRect(x0 + 18, y + 46, pw, 18, 5);
+      ctx.fillStyle = rc; ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, x0 + 25, y + 55.5);
+      ctx.textBaseline = 'alphabetic';
+    }
     setSpacing(ctx, 0);
 
     const slugs = Object.values(s.variants);
@@ -232,9 +238,31 @@
     ctx.setLineDash([]);
   }
 
+  // Monogram disc for sprites whose icon hasn't been datamined yet (matches the .ph style on the page).
+  function drawPlaceholder(ctx, cx, cy, r, name, vc, dim, t) {
+    const words = name.replace(/['’]/g, '').split(/[^A-Za-z0-9]+/).filter(Boolean);
+    const mono = (words.length > 1 ? words[0][0] + words[1][0] : (words[0] || '?').slice(0, 2)).toUpperCase();
+    ctx.save();
+    if (dim) ctx.globalAlpha = 0.6;
+    const g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.4, 0, cx, cy, r);
+    g.addColorStop(0, rgba(vc, 0.55)); g.addColorStop(1, rgba(vc, 0.12));
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.strokeStyle = rgba(vc, 0.65); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = t.text;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `700 ${Math.round(r * 0.75)}px ${DISPLAY}`;
+    ctx.fillText(mono, cx, cy + 1);
+    ctx.font = `700 9px ${BODY}`;
+    ctx.fillStyle = t.muted;
+    ctx.fillText('ART SOON', cx, cy + r + 12);
+    ctx.restore();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+
   function drawCard(ctx, x, y, s, v, slug, t) {
     const st = keyOf(slug);
-    const vc = v.key === 'normal' ? t.rarity[s.rarity] : t.variant[v.key];
+    const vc = v.key === 'normal' ? (t.rarity[s.rarity] || t.variant.normal) : t.variant[v.key];
 
     ctx.save();
     ctx.beginPath(); ctx.roundRect(x, y, CELL_W, CELL_H, 14);
@@ -257,6 +285,8 @@
       if (st === 'missing') ctx.filter = 'grayscale(0.85) brightness(0.7)';
       ctx.drawImage(img, x + (CELL_W - IMG) / 2, y + 8, IMG, IMG);
       ctx.filter = 'none';
+    } else if (!SM.hasArt(slug)) {
+      drawPlaceholder(ctx, x + CELL_W / 2, y + 8 + IMG / 2, IMG * 0.32, s.name, vc, st === 'missing', t);
     }
     ctx.restore();
 
@@ -401,7 +431,7 @@
     const stamp = new Date().toISOString().slice(0, 10);
     if (format === 'png') {
       const canvas = renderSheet(sel, sel.rows, { title: true, page: null, a4: false, scale: PNG_SCALE });
-      download(await toBlob(canvas, 'image/png'), `spritemaxing-collection-${stamp}.png`);
+      download(await toBlob(canvas, 'image/png'), `spritemaxing-${SM.season.id}-collection-${stamp}.png`);
       return { kind: 'image', pages: 1 };
     }
     const chunks = paginate(sel);
@@ -411,7 +441,7 @@
       const jpeg = await toBlob(canvas, 'image/jpeg', 0.92);
       pages.push({ jpeg: new Uint8Array(await jpeg.arrayBuffer()), w: canvas.width, h: canvas.height, link: pdfLink(canvas) });
     }
-    download(buildPdf(pages), `spritemaxing-collection-${stamp}.pdf`);
+    download(buildPdf(pages), `spritemaxing-${SM.season.id}-collection-${stamp}.pdf`);
     return { kind: 'PDF', pages: pages.length };
   }
 
@@ -430,7 +460,7 @@
   }
 
   function updateSummary() {
-    const all = sprites.flatMap(s => Object.values(s.variants));
+    const all = SM.sprites.flatMap(s => Object.values(s.variants));
     for (const st of STATUSES) {
       form.querySelector(`[data-count="${st.key}"]`).textContent = all.filter(sl => keyOf(sl) === st.key).length;
     }

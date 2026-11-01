@@ -31,7 +31,7 @@
       <img src="img/klombo.webp" alt="" class="brand-icon">
       <div>
         <h1>Sprite<span>Maxing</span></h1>
-        <p class="sub">Fortnite Chapter 7 · Season 4 Sprite tracker</p>
+        <p class="sub">Fortnite Chapter 7 Sprite tracker</p>
       </div>
     </div>
     <div class="totals" id="totals"></div>
@@ -58,6 +58,8 @@
     <button type="button" class="btn btn-primary" id="viewExit">Back to my collection</button>
   </div>
 
+  <nav class="season-tabs" id="seasonTabs" role="tablist" aria-label="Season" hidden></nav>
+
   <section class="toolbar">
     <label class="search">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.41-1.41-4.43-4.43A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"/></svg>
@@ -75,6 +77,8 @@
   </section>
 
   <p class="hint">Click a card to cycle <b>To be found → Indexed → Mastered</b>, or use the buttons under it. Tap the <b>i</b> next to a quality (Normal, Gold, …) to see what bonus it gives. Progress is saved in this browser.</p>
+
+  <p class="season-note" id="seasonNote" hidden></p>
 
   <main class="table-wrap">
     <table class="grid" id="grid">
@@ -157,6 +161,7 @@
         <button type="button" class="btn btn-primary" id="shareCopy">Copy</button>
       </div>
       <p class="info-count" id="shareStats"></p>
+      <p class="share-warn" id="shareIdNote" hidden></p>
       <p class="share-warn" id="shareWarn" hidden>Heads up: this link points to your local copy (localhost), so it only opens on this PC until SpriteMaxing is hosted online.</p>
       <div class="info-nav">
         <button type="button" class="btn" data-close>Done</button>
@@ -166,7 +171,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data.js"></script>
+  <!-- One file per season (newest is shown first). Add a season by adding its data file here. -->
+  <script src="data/c7s4.js"></script>
+  <script src="data/c7s5.js"></script>
   <script src="app.js"></script>
   <script src="export.js"></script>
 </body>

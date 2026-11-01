@@ -1,40 +1,45 @@
 #!/usr/bin/env node
-// Refreshes data.js and img/ from fortnite.gg's datamined sprite list.
+// Refreshes a season's data file (data/<season>.js) and img/ from fortnite.gg's datamined sprite list.
 //
-//   node tools/update-data.js              update data.js and download new icons
-//   node tools/update-data.js --dry-run    only report what would change
-//   node tools/update-data.js --full       also re-fetch ability text for existing sprites
-//   node tools/update-data.js --source page.html   parse a saved copy of fortnite.gg/sprites
+//   node tools/update-data.js --source page.html             update the newest season
+//   node tools/update-data.js --source page.html --season c7s4   update a specific season
+//   node tools/update-data.js ... --dry-run                  only report what would change
+//   node tools/update-data.js ... --full                     also re-fetch ability text for existing sprites
 //
 // fortnite.gg serves its HTML pages only to real browsers (Cloudflare check), so a direct download
 // usually fails. Then: open https://fortnite.gg/sprites in your browser, press Ctrl+S, and pass the
 // saved file with --source. For a brand-new sprite you can also save its fortnite.gg page into the same
 // folder; its ability text is picked up from there. Icons download directly (static files aren't blocked).
 //
+// Seasons: each data/<id>.js file is one season, linked to fortnite.gg's data-season number (ggSeason).
+// A new season added by hand (ggSeason: null) is linked automatically to the newest fortnite.gg season
+// that no other data file claims yet.
+//
 // Compatibility rules (saved progress, backups and share links depend on them):
 //   * An existing sprite variant keeps its slug forever, even if fortnite.gg renames its URL.
-//     Variants are matched by their permanent fortnite.gg id, not by name.
+//     Variants are matched by their permanent fortnite.gg id; entries added by hand before fortnite.gg
+//     listed them (no id yet) are matched once by sprite name + quality and then adopt that id.
 //   * Nothing is ever removed. Sprites that disappear from fortnite.gg stay in the tracker.
-//   * Ids in window.SPRITE_IDS are never renumbered; new variants are only added.
+//   * Ids are never renumbered; new variants are only added.
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
+const { loadSeasons, writeSeason, fileFor } = require('./season-file');
 
 const ROOT = path.resolve(__dirname, '..');
-const DATA_FILE = path.join(ROOT, 'data.js');
 const IMG_DIR = path.join(ROOT, 'img');
 const SITE = 'https://fortnite.gg';
 const UA = 'SpriteMaxing-data-updater/1.0 (personal sprite tracker)';
-const DEFAULT_SEASON = '42'; // fortnite.gg's data-season for Chapter 7 Season 4
 const RARITY_ORDER = ['rare', 'epic', 'legendary', 'mythic'];
 
 // fortnite.gg variant name -> our quality key (keys app.js knows how to style and describe).
+// Unknown names get a key derived from the label in the sprite's name ("Fortune Kelper Sprite" -> fortune).
 const KNOWN_VARIANTS = {
   base: 'normal', gold: 'gold', cheatmaster: 'cheatmaster', hacker: 'loothacker',
-  reaper: 'bountyhunter', tricktreat: 'trickortreat', quack: 'quack',
+  reaper: 'bountyhunter', tricktreat: 'trickortreat', quack: 'quack', fortune: 'fortune', cursed: 'cursed',
 };
+const APP_QUALITIES = new Set(['normal', 'gold', 'fortune', 'cursed', 'cheatmaster', 'loothacker', 'bountyhunter', 'trickortreat', 'quack']);
 
 // ---------- args ----------
 const args = process.argv.slice(2);
@@ -43,11 +48,14 @@ const option = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 
 const DRY = flag('--dry-run');
 const FULL = flag('--full');
 const SOURCE = option('--source');
+const SEASON_ARG = option('--season');
 
 // ---------- helpers ----------
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const decode = s => s.replace(/&nbsp;/g, ' ').replace(/&#0?39;|&apos;/g, "'").replace(/&amp;/g, '&').replace(/&quot;/g, '"').trim();
-const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const slugify = s => s.toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+// For matching names across sources: "Lil' Squibbly Sprite" == "lil squibbly"
+const nameKey = s => String(s || '').toLowerCase().replace(/\bsprite\b/g, '').replace(/[^a-z0-9]/g, '');
 
 class BlockedError extends Error {}
 
@@ -66,19 +74,6 @@ async function fetchBytes(url, tries = 3) {
   }
 }
 const fetchText = async url => (await fetchBytes(url)).toString('utf8');
-
-function loadExisting() {
-  if (!fs.existsSync(DATA_FILE)) return { sprites: [], ids: {}, extras: [], meta: {} };
-  const sandbox = { window: {} };
-  vm.runInNewContext(fs.readFileSync(DATA_FILE, 'utf8'), sandbox, { filename: 'data.js' });
-  const w = sandbox.window;
-  return {
-    sprites: JSON.parse(JSON.stringify(w.SPRITES || [])),
-    ids: { ...(w.SPRITE_IDS || {}) },
-    extras: JSON.parse(JSON.stringify(w.SPRITE_EXTRA_VARIANTS || [])),
-    meta: { ...(w.SPRITE_META || {}) },
-  };
-}
 
 function parseAttrs(tag) {
   const out = {};
@@ -143,12 +138,17 @@ function parseAbility(html) {
 
 const slugFromHref = href => href.split('/').pop().replace(/^\d+-/, '').replace(/-sprite$/, '');
 const isWebp = buf => buf.length > 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP';
+const hasIcon = slug => fs.existsSync(path.join(IMG_DIR, `${slug}.webp`));
 
 // ---------- main ----------
 async function main() {
-  const existing = loadExisting();
-  const season = existing.meta.season || DEFAULT_SEASON;
-  const report = { newSprites: [], newVariants: [], renamedUpstream: [], rarityChanges: [], kept: [], images: [], warnings: [], extras: [] };
+  const seasons = loadSeasons();
+  if (!seasons.length) throw new Error('No season files found in data/.');
+  const target = SEASON_ARG
+    ? seasons.find(s => s.id === SEASON_ARG)
+    : seasons.slice().sort((a, b) => b.order - a.order)[0];
+  if (!target) throw new Error(`Unknown season "${SEASON_ARG}". Known: ${seasons.map(s => s.id).join(', ')}.`);
+  const report = { newSprites: [], newVariants: [], adopted: [], renamedUpstream: [], rarityChanges: [], kept: [], images: [], warnings: [], extras: [] };
 
   console.log(SOURCE ? `Reading ${SOURCE}` : `Fetching ${SITE}/sprites`);
   let html;
@@ -167,30 +167,42 @@ async function main() {
   const detailPages = SOURCE ? savedDetailPages(path.dirname(path.resolve(SOURCE))) : new Map();
   const all = parseCards(html);
   if (!all.length) throw new Error('No sprite cards found. fortnite.gg may have changed its page layout; nothing was written.');
-  const cards = all.filter(c => c.season === season);
-  if (!cards.length) {
-    const seen = [...new Set(all.map(c => c.season))].join(', ');
-    throw new Error(`fortnite.gg lists no sprites for season ${season} (found seasons: ${seen}). A new season probably started; nothing was written.`);
-  }
+  const listedSeasons = [...new Set(all.map(c => c.season))].sort((a, b) => Number(b) - Number(a));
 
-  // Lookups from the current data.
-  const slugById = Object.fromEntries(Object.entries(existing.ids).map(([slug, id]) => [id, slug]));
+  // Which fortnite.gg season is this? Known for existing seasons; a new one claims the newest unclaimed number.
+  let ggSeason = target.ggSeason;
+  if (!ggSeason) {
+    const claimed = new Set(seasons.map(s => s.ggSeason).filter(Boolean));
+    ggSeason = listedSeasons.find(n => !claimed.has(n));
+    if (!ggSeason) {
+      console.log(`\nfortnite.gg doesn't list ${target.label} (${target.name}) yet: it only has seasons ${listedSeasons.join(', ')}, which are already tracked.`);
+      console.log('Nothing was written. Try again in a day or two.');
+      return;
+    }
+    console.log(`Linking ${target.label} (${target.name}) to fortnite.gg season ${ggSeason}.`);
+  }
+  const cards = all.filter(c => c.season === ggSeason);
+  if (!cards.length) throw new Error(`fortnite.gg lists no sprites for season ${ggSeason} (found seasons: ${listedSeasons.join(', ')}); nothing was written.`);
+
+  // Lookups. Slugs and icon files are shared by all seasons, so avoid collisions across all of them.
+  const ids = target.ids || {};
+  const sprites = target.sprites;
+  const extras = target.extras || [];
+  const slugById = Object.fromEntries(Object.entries(ids).map(([slug, id]) => [id, slug]));
   const spriteBySlug = new Map();
-  for (const s of existing.sprites) for (const slug of Object.values(s.variants)) spriteBySlug.set(slug, s);
-  const usedSlugs = new Set(Object.keys(existing.ids));
-  for (const s of existing.sprites) for (const slug of Object.values(s.variants)) usedSlugs.add(slug);
-  const usedSpriteIds = new Set(existing.sprites.map(s => s.id));
-  const extras = existing.extras;
-  const ids = existing.ids;
-  const sprites = existing.sprites;
+  for (const s of sprites) for (const slug of Object.values(s.variants)) spriteBySlug.set(slug, s);
+  const usedSlugs = new Set(fs.existsSync(IMG_DIR) ? fs.readdirSync(IMG_DIR).map(f => f.replace(/\.webp$/, '')) : []);
+  for (const season of seasons) for (const s of season.sprites) for (const slug of Object.values(s.variants)) usedSlugs.add(slug);
+  const usedSpriteIds = new Set(sprites.map(s => s.id));
+  const usesOrder = sprites.some(s => s.order != null);
   const imgUrlBySlug = {};
 
   function qualityKey(card) {
     if (KNOWN_VARIANTS[card.variant]) return KNOWN_VARIANTS[card.variant];
-    const key = slugify(card.variant).replace(/-/g, '');
-    if (!extras.some(e => e.key === key)) {
-      const label = card.name.replace(card.parentName, '').replace(/\bSprite\b/, '').replace(/\s+/g, ' ').trim()
-        || key[0].toUpperCase() + key.slice(1);
+    const label = card.name.replace(card.parentName, '').replace(/\bSprite\b/, '').replace(/\s+/g, ' ').trim()
+      || card.variant[0].toUpperCase() + card.variant.slice(1);
+    const key = slugify(label).replace(/-/g, '') || slugify(card.variant).replace(/-/g, '');
+    if (!APP_QUALITIES.has(key) && !extras.some(e => e.key === key)) {
       extras.push({ key, label });
       report.extras.push(`${label} (${key})`);
     }
@@ -208,21 +220,23 @@ async function main() {
   const needAbility = [];
   for (const group of groups.values()) {
     const base = group.find(c => c.variant === 'base') || group[0];
-    // Match an existing sprite through any of its variants' permanent ids.
-    let sprite = group.map(c => slugById[c.id]).filter(Boolean).map(slug => spriteBySlug.get(slug)).find(Boolean);
     const displayName = base.parentName.replace(/ Sprite$/, '');
+    // Match an existing sprite through its variants' permanent ids, else (entries added by hand) by name.
+    let sprite = group.map(c => slugById[c.id]).filter(Boolean).map(slug => spriteBySlug.get(slug)).find(Boolean)
+      || sprites.find(s => nameKey(s.name) === nameKey(displayName));
     if (!sprite) {
       let id = slugify(displayName) || `sprite-${base.id}`;
       while (usedSpriteIds.has(id)) id = `${id}-${base.id}`;
       usedSpriteIds.add(id);
       sprite = { id, name: displayName, rarity: base.rarity, isNew: base.isNew, ability: [], variants: {} };
+      if (usesOrder) sprite.order = Math.max(0, ...sprites.map(s => s.order || 0)) + 1;
       sprites.push(sprite);
       report.newSprites.push(displayName);
       needAbility.push([sprite, base]);
     } else {
-      if (FULL) needAbility.push([sprite, base]);
+      if (FULL || !(sprite.ability || []).length) needAbility.push([sprite, base]);
       if (base.variant === 'base' && RARITY_ORDER.includes(base.rarity) && sprite.rarity !== base.rarity) {
-        report.rarityChanges.push(`${sprite.name}: ${sprite.rarity} -> ${base.rarity}`);
+        report.rarityChanges.push(`${sprite.name}: ${sprite.rarity || 'unknown'} -> ${base.rarity}`);
         sprite.rarity = base.rarity;
       }
       sprite.isNew = base.isNew;
@@ -231,10 +245,16 @@ async function main() {
 
     for (const card of group) {
       const key = qualityKey(card);
-      let slug = slugById[card.id];
       const upstream = slugFromHref(card.href);
+      let slug = slugById[card.id];
       if (slug) {
         if (slug !== upstream) report.renamedUpstream.push(`${slug} (fortnite.gg now calls it ${upstream}; kept ours)`);
+      } else if (sprite.variants[key] && ids[sprite.variants[key]] == null) {
+        // Added by hand before fortnite.gg had it: adopt the permanent id, keep our slug.
+        slug = sprite.variants[key];
+        ids[slug] = card.id;
+        slugById[card.id] = slug;
+        report.adopted.push(`${slug} -> id ${card.id}`);
       } else {
         slug = upstream;
         if (usedSlugs.has(slug)) slug = `${slug}-${card.id}`;
@@ -262,18 +282,20 @@ async function main() {
       if (lines.length) sprite.ability = lines;
       else report.warnings.push(`${sprite.name}: could not read ability text from its fortnite.gg page.`);
     } catch (err) {
-      report.warnings.push(err instanceof BlockedError
-        ? `${sprite.name}: no ability text yet. Save ${SITE}${base.href} next to your --source file and re-run to add it.`
-        : `${sprite.name}: ability fetch failed (${err.message}).`);
+      if (!(sprite.ability || []).length) {
+        report.warnings.push(err instanceof BlockedError
+          ? `${sprite.name}: no ability text yet. Save ${SITE}${base.href} next to your --source file and re-run to add it.`
+          : `${sprite.name}: ability fetch failed (${err.message}).`);
+      }
     }
-    if (!saved) await sleep(400);
+    if (!saved && !SOURCE) await sleep(400);
   }
 
   // Icons: download any that are missing locally.
-  const missingImgs = sprites.flatMap(s => Object.values(s.variants)).filter(slug => !fs.existsSync(path.join(IMG_DIR, `${slug}.webp`)));
-  for (const slug of missingImgs) {
+  const missing = sprites.flatMap(s => Object.values(s.variants)).filter(slug => !hasIcon(slug));
+  for (const slug of missing) {
     const url = imgUrlBySlug[slug];
-    if (!url) { report.warnings.push(`${slug}: icon missing and fortnite.gg no longer lists it.`); continue; }
+    if (!url) { report.warnings.push(`${slug}: icon missing and fortnite.gg doesn't list it.`); continue; }
     if (DRY) { report.images.push(`${slug} (would download)`); continue; }
     try {
       const buf = await fetchBytes(url);
@@ -286,42 +308,30 @@ async function main() {
     await sleep(250);
   }
 
-  // ---------- write ----------
-  sprites.sort((a, b) => RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity) || a.name.localeCompare(b.name));
-  const sortedIds = Object.fromEntries(Object.entries(ids).sort((a, b) => a[1] - b[1]));
-  const meta = { season, source: 'fortnite.gg', updated: new Date().toISOString().slice(0, 10) };
-  const out = [
-    '// Generated by tools/update-data.js from datamined Chapter 7 Season 4 sprite data (fortnite.gg),',
-    '// cross-checked with fortnite.fandom.com. Images: img/<slug>.webp (512x512).',
-    '// Do not hand-edit slugs or ids: saved progress, backups and share links depend on them.',
-    `window.SPRITES = ${JSON.stringify(sprites, null, 2)};`,
-    '',
-    '// Permanent fortnite.gg sprite IDs, used by share links and backups. Never renumber; new sprites just get new IDs.',
-    `window.SPRITE_IDS = ${JSON.stringify(sortedIds)};`,
-    '',
-    '// Qualities that appeared after the app was written (app.js shows them with a generic style).',
-    `window.SPRITE_EXTRA_VARIANTS = ${JSON.stringify(extras)};`,
-    '',
-    `window.SPRITE_META = ${JSON.stringify(meta)};`,
-    '',
-  ].join('\n');
-
   // ---------- report ----------
   const list = (title, items) => { if (items.length) console.log(`\n${title} (${items.length}):\n  - ${items.join('\n  - ')}`); };
   const total = sprites.reduce((n, s) => n + Object.keys(s.variants).length, 0);
-  console.log(`\nSeason ${season}: ${cards.length} entries on fortnite.gg -> ${sprites.length} sprites, ${total} tracked variants.`);
+  console.log(`\n${target.label} (fortnite.gg season ${ggSeason}): ${cards.length} entries on fortnite.gg -> ${sprites.length} sprites, ${total} tracked variants.`);
   list('New sprites', report.newSprites);
   list('New variants of existing sprites', report.newVariants);
+  list('Hand-added entries linked to their permanent fortnite.gg id (slug kept)', report.adopted);
   list('New quality types (shown with a generic style; add colours/perk text in app.js)', report.extras);
   list('Rarity changes', report.rarityChanges);
   list('Renamed on fortnite.gg (our slug kept so progress stays linked)', report.renamedUpstream);
   list('No longer listed on fortnite.gg (kept in the tracker)', report.kept);
   list(DRY ? 'Icons to download' : 'Icons downloaded', report.images);
   list('Warnings', report.warnings);
-
   if (DRY) { console.log('\nDry run: nothing written.'); return; }
-  fs.writeFileSync(DATA_FILE, out);
-  console.log(`\nWrote ${path.relative(process.cwd(), DATA_FILE) || DATA_FILE}.`);
+
+  // ---------- write ----------
+  const out = writeSeason({
+    ...target,
+    ggSeason,
+    meta: { ...(target.meta || {}), source: 'fortnite.gg', updated: new Date().toISOString().slice(0, 10) },
+    sprites, ids, extras,
+    missingIcons: sprites.flatMap(s => Object.values(s.variants)).filter(slug => !hasIcon(slug)),
+  });
+  console.log(`\nWrote ${path.relative(process.cwd(), out) || fileFor(target.id)}.`);
 }
 
 main().catch(err => { console.error(`\nUpdate failed: ${err.message}`); process.exit(1); });

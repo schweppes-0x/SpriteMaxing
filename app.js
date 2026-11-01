@@ -1,13 +1,17 @@
 (() => {
-  const STORAGE_KEY = 'spritesmaxing.c7s4.v1';
-
-  // perk: the variant's bonus (also used in card tooltips). detail: extra context shown in the header panel.
-  const VARIANTS = [
+  // ---------- qualities ----------
+  // Every quality any season uses, in column order. A season shows only the ones its sprites have.
+  // perk: the bonus (also used in card tooltips). detail: extra context for the info pop-up.
+  const QUALITIES = [
     { key: 'normal', label: 'Normal', perk: null,
       bonus: 'The standard Sprite, with no extra bonus.',
       detail: 'Its only power is the Sprite\'s own ability (shown on each row), which gets stronger with every Level Up.' },
-    { key: 'gold', label: 'Gold', perk: 'Gain 3x bonus Sprite XP from eliminations.',
+    { key: 'gold', label: 'Gold', perk: 'Gain bonus Sprite XP from eliminations (3x in Season 4).',
       detail: 'Levels up much faster when you get eliminations, which makes it the quickest to master.' },
+    { key: 'fortune', label: 'Fortune', perk: 'Reveals nearby Chests.',
+      detail: 'A Treasure Hunters quality. Great for finding loot (and more Sprite Chests) faster.' },
+    { key: 'cursed', label: 'Cursed', perk: 'Higher chance of finding rare Sprite variants, but water damages you.',
+      detail: 'A Treasure Hunters quality. Stay out of the water while it is equipped.' },
     { key: 'cheatmaster', label: 'Cheat Master', perk: 'Button mash! All inputs are correct when entering cheat codes found in the world.',
       detail: 'Any input opens the cheat code arrows hidden around the island, and those give you a random Sprite.' },
     { key: 'loothacker', label: 'Loot Hacker', perk: 'Increases chances of spawning items from your Loot Hacks.',
@@ -17,17 +21,14 @@
     { key: 'trickortreat', label: 'Trick or Treat', perk: 'Chance to find Halloween candy when opening containers.',
       detail: 'A limited Fortnitemares variant. Look for it in Pumpkin Chests, rare chests and vaults, or from cheat codes.' },
     { key: 'quack', label: 'Quack', perk: 'Gives 50% of the Sprite XP it earns to the other Sprites in your inventory.',
-      detail: 'Great for levelling several Sprites at once. This season only Jonesy, Adventure, Bush, Klombo and Spooky Dash have one.' },
+      detail: 'Great for levelling several Sprites at once. Only a few Sprites have one.' },
   ];
-  // Qualities that tools/update-data.js found after this list was written: shown with a generic look.
-  for (const x of window.SPRITE_EXTRA_VARIANTS || []) {
-    if (VARIANTS.some(v => v.key === x.key)) continue;
-    VARIANTS.push({
-      key: x.key, label: x.label, extra: true,
-      perk: `A new ${x.label} quality added during the season.`,
-      detail: 'Its exact bonus isn\'t documented in SpriteMaxing yet. Check the in-game Sprite details.',
-    });
-  }
+  // Qualities tools/update-data.js found after this list was written get a generic look and text.
+  const genericQuality = (key, label) => ({
+    key, label, extra: true,
+    perk: `A new ${label} quality added during the season.`,
+    detail: 'Its exact bonus isn\'t documented in SpriteMaxing yet. Check the in-game Sprite details.',
+  });
   // CSS classes for a quality; unknown (extra) ones share the generic .v-extra colour.
   const vClass = v => (v.extra ? `v-${v.key} v-extra` : `v-${v.key}`);
 
@@ -40,16 +41,42 @@
     { value: 2, key: 'mastered', label: 'Mastered',    short: '★' },
   ];
 
-  const sprites = (window.SPRITES || []).slice().sort((a, b) =>
-    RARITIES.indexOf(a.rarity) - RARITIES.indexOf(b.rarity) || a.name.localeCompare(b.name));
-  const allSlugs = sprites.flatMap(s => Object.values(s.variants));
+  // ---------- seasons ----------
+  // Each data/<id>.js file registers one season. Progress is stored per season; Season 4 keeps the
+  // key it always had (spritesmaxing.c7s4.v1). Old share links and backups had no season: Season 4.
+  const LEGACY_SEASON = 'c7s4';
+  const storageKeyFor = id => `spritesmaxing.${id}.v1`;
+  const rarityRank = r => (RARITIES.includes(r) ? RARITIES.indexOf(r) : RARITIES.length);
+
+  function prepareSeason(raw) {
+    const present = new Set(raw.sprites.flatMap(s => Object.keys(s.variants)));
+    const variants = QUALITIES.filter(q => present.has(q.key));
+    for (const x of raw.extras || []) {
+      if (!variants.some(v => v.key === x.key)) variants.push(genericQuality(x.key, x.label));
+    }
+    for (const key of present) {
+      if (!variants.some(v => v.key === key)) variants.push(genericQuality(key, key[0].toUpperCase() + key.slice(1)));
+    }
+    // In-game numbered order when we have it, otherwise rarest first, then by name.
+    const sprites = raw.sprites.slice().sort((a, b) =>
+      (a.order ?? Infinity) - (b.order ?? Infinity) || rarityRank(a.rarity) - rarityRank(b.rarity) || a.name.localeCompare(b.name));
+    const ids = raw.ids || {};
+    return {
+      ...raw, variants, sprites, ids,
+      allSlugs: sprites.flatMap(s => Object.values(s.variants)),
+      idToSlug: Object.fromEntries(Object.entries(ids).map(([slug, id]) => [id, slug])),
+      missing: new Set(raw.missingIcons || []),
+      storageKey: storageKeyFor(raw.id),
+    };
+  }
+  const SEASONS = (window.SPRITE_SEASONS || []).map(prepareSeason).sort((a, b) => b.order - a.order); // newest first
+  const seasonById = id => SEASONS.find(s => s.id === id);
+  const legacySeasonId = name => (seasonById(String(name || '').toLowerCase()) ? String(name).toLowerCase() : LEGACY_SEASON);
 
   // ---------- share links ----------
-  // Format: #share=1.<base64url>&by=<name>. Two bits per permanent sprite ID (0 = to be found,
-  // 1 = indexed, 2 = mastered), so links keep working when new sprites are added later.
+  // Format: #share=1.<base64url>&s=<season>&by=<name>. Two bits per permanent sprite ID (0 = to be
+  // found, 1 = indexed, 2 = mastered), so links keep working when new sprites are added later.
   const SHARE_VERSION = '1';
-  const SPRITE_IDS = window.SPRITE_IDS || {};
-  const ID_TO_SLUG = Object.fromEntries(Object.entries(SPRITE_IDS).map(([slug, id]) => [id, slug]));
 
   function toBase64Url(bytes) {
     let bin = '';
@@ -60,16 +87,16 @@
     const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
     return Uint8Array.from(bin, c => c.charCodeAt(0));
   }
-  function encodeShare(p) {
+  function encodeShare(p, s) {
     const entries = Object.entries(p)
-      .map(([slug, st]) => [SPRITE_IDS[slug], st])
+      .map(([slug, st]) => [s.ids[slug], st])
       .filter(([id, st]) => id != null && (st === 1 || st === 2));
     const maxId = entries.reduce((m, [id]) => Math.max(m, id), -1);
     const bytes = new Uint8Array(Math.ceil((maxId + 1) / 4));
     for (const [id, st] of entries) bytes[id >> 2] |= st << ((id & 3) * 2);
     return `${SHARE_VERSION}.${toBase64Url(bytes)}`;
   }
-  function decodeShare(code) {
+  function decodeShare(code, s) {
     const [version, data = ''] = code.split('.');
     if (version !== SHARE_VERSION) throw new Error('version');
     if (!/^[A-Za-z0-9_-]*$/.test(data)) throw new Error('format');
@@ -77,19 +104,21 @@
     fromBase64Url(data).forEach((b, i) => {
       for (let k = 0; k < 4; k++) {
         const st = (b >> (k * 2)) & 3;
-        const slug = ID_TO_SLUG[i * 4 + k];
+        const slug = s.idToSlug[i * 4 + k];
         if (slug && (st === 1 || st === 2)) out[slug] = st;
       }
     });
     return out;
   }
-  // Returns { progress, by } when the page was opened from a share link, otherwise null.
+  // Returns { seasonId, progress, by } when opened from a share link, { error } if broken, else null.
   function readShareFromUrl() {
     const params = new URLSearchParams(location.hash.slice(1));
     const code = params.get('share');
     if (!code) return null;
+    const s = seasonById(params.get('s') || LEGACY_SEASON);
+    if (!s) return { error: true };
     try {
-      return { progress: decodeShare(code), by: (params.get('by') || '').trim().slice(0, 24) };
+      return { seasonId: s.id, progress: decodeShare(code, s), by: (params.get('by') || '').trim().slice(0, 24) };
     } catch {
       return { error: true };
     }
@@ -100,20 +129,23 @@
   // so the visitor's own tracked progress in localStorage is never touched.
   const shared = readShareFromUrl();
   const viewing = !!(shared && !shared.error);
-  let progress = viewing ? shared.progress : load();
+  const ownProgress = {}; // season id -> progress object, loaded lazily from localStorage
+  let season = null;      // the season shown now (prepared)
+  let progress = {};      // that season's statuses: slug -> 1 (indexed) | 2 (mastered)
   const filters = { q: '', rarity: new Set(), status: 'all' };
 
-  function load() {
+  function load(id) {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKeyFor(id));
       const data = raw ? JSON.parse(raw) : {};
       return typeof data === 'object' && data ? data : {};
     } catch { return {}; }
   }
-  function save() {
+  const progressFor = id => (ownProgress[id] ||= load(id));
+  function save(id = season.id) {
     if (viewing) return; // read-only: never overwrite the visitor's own progress
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+      localStorage.setItem(storageKeyFor(id), JSON.stringify(progressFor(id)));
       requestPersistence();
     } catch {
       showStorageWarning();
@@ -166,6 +198,27 @@
   function displayName(sprite, variant) {
     return variant.key === 'normal' ? `${sprite.name} Sprite` : `${variant.label} ${sprite.name} Sprite`;
   }
+  // Two-letter monogram for placeholder art: initials of two words, else the first two letters.
+  function monogram(name) {
+    const words = name.replace(/['’]/g, '').split(/[^A-Za-z0-9]+/).filter(Boolean);
+    return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] || '?').slice(0, 2)).toUpperCase();
+  }
+  // Icon for a variant, or placeholder art when the icon hasn't been datamined yet.
+  function spriteArt(sprite, slug, alt, lazy = true) {
+    if (season.missing.has(slug)) {
+      const ph = el('span', 'ph');
+      ph.setAttribute('role', 'img');
+      ph.setAttribute('aria-label', `${alt} (art not available yet)`);
+      ph.append(el('span', 'ph-mono', monogram(sprite.name)), el('span', 'ph-note', 'Art soon'));
+      return ph;
+    }
+    const img = el('img');
+    img.src = `img/${slug}.webp`;
+    img.alt = alt;
+    if (lazy) { img.loading = 'lazy'; img.decoding = 'async'; }
+    img.width = 256; img.height = 256;
+    return img;
+  }
   let toastTimer;
   function toast(msg) {
     const t = $('#toast');
@@ -179,7 +232,7 @@
   function buildHead() {
     const tr = el('tr');
     tr.append(el('th', 'col-sprite', 'Sprite'));
-    for (const v of VARIANTS) {
+    for (const v of season.variants) {
       const th = el('th', `col-variant ${vClass(v)}`);
       th.dataset.variant = v.key;
       const top = el('span', 'v-top');
@@ -193,17 +246,21 @@
       th.append(top, el('span', 'v-count'));
       tr.append(th);
     }
-    $('#gridHead').append(tr);
+    $('#gridHead').replaceChildren(tr);
   }
 
   // ---------- quality info pop-up ----------
   const SAMPLE_ORDER = ['jonesy', 'klombo', 'sonic', 'crown', 'bush', 'spooky-dash', 'adventure'];
   function openInfo(key) {
+    const VARIANTS = season.variants;
     const i = VARIANTS.findIndex(v => v.key === key);
     const v = VARIANTS[i];
     const dlg = $('#infoDialog');
-    const withIt = sprites.filter(s => s.variants[v.key]);
-    const samples = SAMPLE_ORDER.map(id => sprites.find(s => s.id === id)).filter(s => s && s.variants[v.key]).slice(0, 3);
+    const withIt = season.sprites.filter(s => s.variants[v.key]);
+    // Prefer well-known sprites that already have art, then any with art, then placeholders.
+    const hasArt = s => !season.missing.has(s.variants[v.key]);
+    const preferred = SAMPLE_ORDER.map(id => withIt.find(s => s.id === id)).filter(Boolean);
+    const samples = [...new Set([...preferred.filter(hasArt), ...withIt.filter(hasArt), ...withIt])].slice(0, 3);
 
     dlg.className = `info-dialog ${vClass(v)}`;
     const body = $('#infoBody');
@@ -219,11 +276,9 @@
 
     const art = el('div', 'info-art');
     for (const s of samples) {
-      const img = el('img');
-      img.src = `img/${s.variants[v.key]}.webp`;
-      img.alt = displayName(s, v);
-      img.title = displayName(s, v);
-      art.append(img);
+      const node = spriteArt(s, s.variants[v.key], displayName(s, v), false);
+      node.title = displayName(s, v);
+      art.append(node);
     }
     body.append(art);
 
@@ -232,7 +287,7 @@
     body.append(bonus);
     if (v.detail) body.append(el('p', 'info-detail', v.detail));
     if (v.perk) body.append(el('p', 'info-plus', '+ Keeps the Sprite\'s normal ability on top of this bonus.'));
-    body.append(el('p', 'info-count', `${withIt.length} of ${sprites.length} Sprites come in ${v.label} this season.`));
+    body.append(el('p', 'info-count', `${withIt.length} of ${season.sprites.length} Sprites come in ${v.label} in ${season.label}.`));
 
     const prev = VARIANTS[(i - 1 + VARIANTS.length) % VARIANTS.length];
     const next = VARIANTS[(i + 1) % VARIANTS.length];
@@ -250,8 +305,10 @@
 
   function buildBody() {
     const body = $('#gridBody');
-    for (const s of sprites) {
-      const tr = el('tr', `row r-${s.rarity}`);
+    body.replaceChildren();
+    for (const s of season.sprites) {
+      const rarity = s.rarity || 'unknown';
+      const tr = el('tr', `row r-${rarity}`);
       tr.dataset.id = s.id;
 
       const th = el('th', 'row-head');
@@ -259,18 +316,19 @@
       const name = el('div', 'row-name', s.name);
       if (s.isNew) name.append(el('span', 'new-tag', 'New'));
       const meta = el('div', 'row-meta');
-      meta.append(el('span', `rarity-badge rb-${s.rarity}`, cap(s.rarity)), el('span', 'row-count'));
-      const ability = el('p', 'row-ability', s.ability.join(' '));
+      if (s.rarity) meta.append(el('span', `rarity-badge rb-${s.rarity}`, cap(s.rarity)));
+      meta.append(el('span', 'row-count'));
+      const ability = el('p', 'row-ability', (s.ability || []).join(' '));
       th.append(name, meta, ability);
       tr.append(th);
 
-      for (const v of VARIANTS) {
+      for (const v of season.variants) {
         const td = el('td', 'cell');
         const slug = s.variants[v.key];
         if (!slug) {
           td.classList.add('cell-na');
           td.append(el('div', 'card card-na', '—'));
-          td.title = `${s.name} has no ${v.label} variant this season.`;
+          td.title = `${s.name} has no ${v.label} variant in ${season.label}.`;
         } else {
           td.append(buildCard(s, v, slug));
         }
@@ -281,21 +339,15 @@
   }
 
   function buildCard(sprite, variant, slug) {
-    const card = el('div', `card ${vClass(variant)} rc-${sprite.rarity}`);
+    const card = el('div', `card ${vClass(variant)} rc-${sprite.rarity || 'unknown'}`);
     card.dataset.slug = slug;
 
     const art = el('button', 'card-art');
     art.type = 'button';
     const full = displayName(sprite, variant);
     art.setAttribute('aria-label', `${full}: cycle status`);
-    art.title = [full, variant.perk, sprite.ability.join(' ')].filter(Boolean).join('\n\n');
-    const img = el('img');
-    img.src = `img/${slug}.webp`;
-    img.alt = full;
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    img.width = 256; img.height = 256;
-    art.append(img, el('span', 'badge'));
+    art.title = [full, variant.perk, (sprite.ability || []).join(' ')].filter(Boolean).join('\n\n');
+    art.append(spriteArt(sprite, slug, full), el('span', 'badge'));
     if (viewing) art.setAttribute('aria-disabled', 'true');
     art.addEventListener('click', () => {
       if (viewing) return;
@@ -339,6 +391,7 @@
 
   // ---------- counts ----------
   function refreshCounts() {
+    const allSlugs = season.allSlugs;
     const total = allSlugs.length;
     let indexed = 0, mastered = 0;
     for (const slug of allSlugs) {
@@ -361,27 +414,32 @@
     }
 
     // per-variant column counts
-    for (const v of VARIANTS) {
-      const slugs = sprites.map(s => s.variants[v.key]).filter(Boolean);
+    for (const v of season.variants) {
+      const slugs = season.sprites.map(s => s.variants[v.key]).filter(Boolean);
       const idx = slugs.filter(sl => statusOf(sl) >= 1).length;
       const th = document.querySelector(`th[data-variant="${v.key}"] .v-count`);
       if (th) th.textContent = `${idx}/${slugs.length}`;
     }
     // per-row counts
-    for (const s of sprites) {
+    for (const s of season.sprites) {
       const slugs = Object.values(s.variants);
       const idx = slugs.filter(sl => statusOf(sl) >= 1).length;
       const mas = slugs.filter(sl => statusOf(sl) === 2).length;
-      const row = document.querySelector(`tr[data-id="${s.id}"]`);
+      const row = document.querySelector(`tr[data-id="${CSS.escape(s.id)}"]`);
       row.querySelector('.row-count').textContent = `${idx}/${slugs.length} indexed · ${mas} ★`;
       row.classList.toggle('row-complete', mas === slugs.length);
     }
   }
 
   // ---------- filters ----------
-  function buildFilters() {
+  // Rarity chips depend on the season (a brand-new season may not have rarities yet).
+  function buildRarityChips() {
     const rc = $('#rarityChips');
-    for (const r of RARITIES) {
+    rc.replaceChildren();
+    filters.rarity.clear();
+    const present = RARITIES.filter(r => season.sprites.some(s => s.rarity === r));
+    rc.hidden = !present.length;
+    for (const r of present) {
       const b = el('button', `chip chip-${r}`, cap(r));
       b.type = 'button';
       b.setAttribute('aria-pressed', 'false');
@@ -392,6 +450,8 @@
       });
       rc.append(b);
     }
+  }
+  function buildFilters() {
     const sc = $('#statusChips');
     const opts = [{ key: 'all', label: 'All' }, ...STATUSES.map(s => ({ key: s.key, label: s.label }))];
     for (const o of opts) {
@@ -410,11 +470,11 @@
 
   function applyFilters() {
     let visibleRows = 0;
-    for (const s of sprites) {
-      const row = document.querySelector(`tr[data-id="${s.id}"]`);
+    for (const s of season.sprites) {
+      const row = document.querySelector(`tr[data-id="${CSS.escape(s.id)}"]`);
       const rarityOk = !filters.rarity.size || filters.rarity.has(s.rarity);
       const qOk = !filters.q || s.name.toLowerCase().includes(filters.q) ||
-        VARIANTS.some(v => s.variants[v.key] && displayName(s, v).toLowerCase().includes(filters.q));
+        season.variants.some(v => s.variants[v.key] && displayName(s, v).toLowerCase().includes(filters.q));
       let anyCard = false;
       row.querySelectorAll('.card[data-slug]').forEach(card => {
         const match = filters.status === 'all' || card.dataset.status === filters.status;
@@ -428,13 +488,57 @@
     $('#empty').hidden = visibleRows > 0;
   }
 
-  // ---------- import / export / reset ----------
-  // Backup format v2: `progress` (slug -> status) plus `ids` (slug -> permanent sprite ID). Restore
-  // matches by slug first and falls back to the ID, so backups survive data updates and renames.
+  // ---------- seasons: tabs & switching ----------
+  function buildSeasonTabs() {
+    const nav = $('#seasonTabs');
+    nav.replaceChildren();
+    nav.hidden = viewing || SEASONS.length < 2;
+    SEASONS.forEach((s, i) => {
+      const b = el('button', 'season-tab');
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.dataset.season = s.id;
+      b.append(el('span', 'season-tab-label', s.label), el('span', 'season-tab-name', s.name));
+      if (i === 0) b.append(el('span', 'new-tag', 'New'));
+      b.addEventListener('click', () => switchSeason(s.id));
+      nav.append(b);
+    });
+  }
+
+  function switchSeason(id) {
+    const next = seasonById(id) || SEASONS[0];
+    if (season && season.id === next.id) return;
+    season = next;
+    progress = viewing ? shared.progress : progressFor(season.id);
+    document.querySelectorAll('.season-tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.season === season.id)));
+    // A season whose art hasn't been datamined yet gets a short explanation above the grid.
+    const note = $('#seasonNote');
+    note.hidden = !season.missing.size;
+    if (season.missing.size) {
+      note.textContent = `${season.label} just dropped. Art for its sprites isn't datamined yet, so they show placeholders. ` +
+        'Real icons (and new qualities like Gold) are added in the next data update, and your progress is kept.';
+    }
+    buildHead();
+    buildBody();
+    buildRarityChips();
+    refreshCounts();
+    applyFilters();
+  }
+
+  // ---------- backup / restore / reset ----------
+  // Backup format 3: every season with progress, as seasons[id] = { progress, ids }. `ids` maps each slug
+  // to its permanent sprite ID, so restore can fall back to the ID when a slug has changed.
+  // Formats 1-2 (single season, before seasons existed) restore into Season 4.
   function exportProgress() {
-    const ids = {};
-    for (const slug of Object.keys(progress)) if (SPRITE_IDS[slug] != null) ids[slug] = SPRITE_IDS[slug];
-    const backup = { app: 'SpriteMaxing', format: 2, season: 'C7S4', exported: new Date().toISOString(), progress, ids };
+    const seasons = {};
+    for (const s of SEASONS) {
+      const p = progressFor(s.id);
+      if (!Object.keys(p).length) continue;
+      const ids = {};
+      for (const slug of Object.keys(p)) if (s.ids[slug] != null) ids[slug] = s.ids[slug];
+      seasons[s.id] = { progress: p, ids };
+    }
+    const backup = { app: 'SpriteMaxing', format: 3, exported: new Date().toISOString(), seasons };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const a = el('a');
     a.href = URL.createObjectURL(blob);
@@ -444,42 +548,71 @@
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
-  // Reads a backup file, then asks before replacing the current progress.
+
+  // Clean one season's entries from a file: keep known slugs (or ID matches), count the rest as skipped.
+  function cleanEntries(s, incoming, fileIds) {
+    const meta = new Set(['app', 'format', 'season', 'exported', 'progress', 'ids', 'seasons']);
+    const known = new Set(s.allSlugs);
+    const clean = {};
+    let skipped = 0;
+    for (const [slug, raw] of Object.entries(incoming || {})) {
+      if (meta.has(slug)) continue;
+      const v = Number(raw);
+      if (v !== 1 && v !== 2) continue;
+      // Same name as today, or the same sprite under a newer/older name (matched by permanent ID).
+      const target = known.has(slug) ? slug : s.idToSlug[fileIds[slug]];
+      if (target && known.has(target)) clean[target] = v;
+      else skipped++;
+    }
+    return { clean, skipped };
+  }
+
+  // Reads a backup file, then asks before replacing progress for the seasons it contains.
   function importProgress(file) {
     if (viewing) return;
     const reader = new FileReader();
     reader.onload = async () => {
       let data;
       try { data = JSON.parse(reader.result); } catch { data = null; }
-      const incoming = data && typeof data === 'object'
-        ? (data.progress && typeof data.progress === 'object' ? data.progress : data)
-        : null;
-      const known = new Set(allSlugs);
-      const meta = new Set(['app', 'format', 'season', 'exported', 'progress', 'ids']);
-      const fileIds = data && data.ids && typeof data.ids === 'object' ? data.ids : {};
-      const clean = {};
-      let skipped = 0;
-      if (incoming) {
-        for (const [slug, raw] of Object.entries(incoming)) {
-          if (meta.has(slug)) continue;
-          const v = Number(raw);
-          if (v !== 1 && v !== 2) continue;
-          // Same name as today, or the same sprite under a newer/older name (matched by permanent ID).
-          const target = known.has(slug) ? slug : ID_TO_SLUG[fileIds[slug]];
-          if (target && known.has(target)) clean[target] = v;
-          else skipped++;
+      if (!data || typeof data !== 'object') { toast(`"${file.name}" is not a SpriteMaxing backup.`); return; }
+
+      // season id -> { incoming, fileIds }
+      const parts = {};
+      if (data.seasons && typeof data.seasons === 'object') {
+        for (const [id, entry] of Object.entries(data.seasons)) {
+          if (entry && typeof entry === 'object') parts[id] = { incoming: entry.progress, fileIds: entry.ids || {} };
         }
+      } else {
+        const incoming = data.progress && typeof data.progress === 'object' ? data.progress : data;
+        parts[legacySeasonId(data.season)] = { incoming, fileIds: data.ids && typeof data.ids === 'object' ? data.ids : {} };
       }
-      const looksLikeBackup = incoming && (Object.keys(clean).length || /^Sprites?Maxing$/.test(data.app || ''));
-      if (!looksLikeBackup) { toast(`"${file.name}" is not a SpriteMaxing backup.`); return; }
+
+      const result = []; // [{ season, clean }]
+      let skipped = 0;
+      for (const [id, { incoming, fileIds }] of Object.entries(parts)) {
+        const s = seasonById(id);
+        if (!s) { skipped += Object.keys(incoming || {}).length; continue; }
+        const r = cleanEntries(s, incoming, fileIds);
+        skipped += r.skipped;
+        result.push({ season: s, clean: r.clean });
+      }
+      const anyEntries = result.some(r => Object.keys(r.clean).length);
+      if (!result.length || (!anyEntries && !/^Sprites?Maxing$/.test(data.app || ''))) {
+        toast(`"${file.name}" is not a SpriteMaxing backup.`);
+        return;
+      }
 
       const body = el('div');
       const exported = data.exported ? new Date(data.exported) : null;
       const when = exported && !isNaN(exported)
         ? ` (saved ${exported.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })})`
         : '';
-      body.append(el('p', 'info-detail', `Restoring "${file.name}"${when} will replace your current progress.`));
-      body.append(compareStats(progress, clean));
+      const names = result.map(r => r.season.label).join(' and ');
+      body.append(el('p', 'info-detail', `Restoring "${file.name}"${when} will replace your ${names} progress.`));
+      for (const r of result) {
+        if (result.length > 1) body.append(el('p', 'compare-season', r.season.label));
+        body.append(compareStats(r.season, progressFor(r.season.id), r.clean));
+      }
       if (skipped) {
         body.append(el('p', 'info-count',
           `${skipped} ${skipped === 1 ? 'entry' : 'entries'} in the file didn't match a current sprite and will be skipped.`));
@@ -490,29 +623,34 @@
         confirmLabel: 'Restore', tone: 'primary',
       });
       if (!ok) { toast('Restore cancelled.'); return; }
-      progress = clean;
-      save();
+      let restored = 0;
+      for (const r of result) {
+        ownProgress[r.season.id] = r.clean;
+        save(r.season.id);
+        restored += Object.keys(r.clean).length;
+      }
+      progress = progressFor(season.id);
       rerenderAll();
-      toast(`Restored ${Object.keys(clean).length} tracked sprites.`);
+      toast(`Restored ${restored} tracked sprites.`);
     };
     reader.onerror = () => toast('Could not read that file.');
     reader.readAsText(file);
   }
 
-  function statsOf(p) {
-    const vals = allSlugs.map(slug => p[slug]).filter(Boolean);
+  function statsOf(s, p) {
+    const vals = s.allSlugs.map(slug => p[slug]).filter(Boolean);
     return { indexed: vals.filter(v => v >= 1).length, mastered: vals.filter(v => v === 2).length };
   }
   // Two small stat boxes: what you have now vs. what the file contains.
-  function compareStats(now, next) {
+  function compareStats(s, now, next) {
     const wrap = el('div', 'compare');
     for (const [label, p] of [['Current', now], ['From file', next]]) {
-      const s = statsOf(p);
+      const st = statsOf(s, p);
       const box = el('div', 'compare-box');
       box.append(
         el('span', 'compare-label', label),
-        el('span', 'compare-stat s-indexed', `${s.indexed} indexed`),
-        el('span', 'compare-stat s-mastered', `${s.mastered} mastered`),
+        el('span', 'compare-stat s-indexed', `${st.indexed} indexed`),
+        el('span', 'compare-stat s-mastered', `${st.mastered} mastered`),
       );
       wrap.append(box);
     }
@@ -558,19 +696,20 @@
   $('#importFile').addEventListener('change', e => { if (e.target.files[0]) importProgress(e.target.files[0]); e.target.value = ''; });
   $('#resetBtn').addEventListener('click', async () => {
     if (viewing) return;
-    const tracked = Object.keys(progress).length;
+    const tracked = statsOf(season, progress).indexed;
     const ok = await confirmAction({
-      kicker: 'Careful', title: 'Reset progress?',
+      kicker: 'Careful', title: `Reset ${season.label}?`,
       body: tracked
-        ? `This clears ${tracked} tracked sprite${tracked === 1 ? '' : 's'}. It can't be undone, so make a Backup first if you might want them back.`
-        : 'Nothing is tracked yet, so there is nothing to reset.',
-      confirmLabel: 'Reset everything', tone: 'danger', disabled: !tracked,
+        ? `This clears ${tracked} tracked ${season.label} sprite${tracked === 1 ? '' : 's'}. Other seasons are not affected. It can't be undone, so make a Backup first if you might want them back.`
+        : `Nothing is tracked in ${season.label} yet, so there is nothing to reset.`,
+      confirmLabel: `Reset ${season.label}`, tone: 'danger', disabled: !tracked,
     });
     if (!ok) return;
-    progress = {};
+    ownProgress[season.id] = {};
+    progress = ownProgress[season.id];
     save();
     rerenderAll();
-    toast('Progress reset.');
+    toast(`${season.label} progress reset.`);
   });
 
   // ---------- sharing ----------
@@ -580,17 +719,26 @@
 
   function buildShareLink() {
     const name = $('#shareName').value.trim().slice(0, 24);
-    const params = new URLSearchParams({ share: encodeShare(progress) });
+    const params = new URLSearchParams({ share: encodeShare(progress, season), s: season.id });
     if (name) params.set('by', name);
     $('#shareLink').value = `${baseUrl()}#${params}`;
     try { localStorage.setItem(NAME_KEY, name); } catch {}
   }
   $('#shareBtn').addEventListener('click', () => {
     try { $('#shareName').value = localStorage.getItem(NAME_KEY) || ''; } catch {}
-    const s = statsOf(progress);
+    const s = statsOf(season, progress);
     $('#shareStats').textContent =
-      `Includes your ${s.indexed} indexed and ${s.mastered} mastered sprites. It's a snapshot, so make a new link after you track more.`;
+      `Includes your ${s.indexed} indexed and ${s.mastered} mastered ${season.label} sprites. It's a snapshot, so make a new link after you track more.`;
     $('#shareWarn').hidden = !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && location.protocol !== 'file:';
+    // Sprites without a permanent ID (a brand-new season before its data update) can't go in a link yet.
+    const tracked = Object.keys(progress).filter(slug => season.allSlugs.includes(slug));
+    const noId = tracked.filter(slug => season.ids[slug] == null).length;
+    const idNote = $('#shareIdNote');
+    idNote.hidden = !noId;
+    idNote.textContent = noId === tracked.length
+      ? `${season.label} sprites can't be shared yet: their permanent IDs arrive with the next data update. Share links work again after that.`
+      : `${noId} of your ${season.label} sprites aren't in the link yet: their permanent IDs arrive with the next data update.`;
+    $('#shareCopy').disabled = !!noId && noId === tracked.length;
     $('#shareCopy').textContent = 'Copy';
     buildShareLink();
     shareDlg.showModal();
@@ -613,8 +761,9 @@
   }
   if (viewing) {
     document.body.classList.add('viewing');
+    const s = seasonById(shared.seasonId);
     const who = shared.by ? `${shared.by}'s collection` : 'A shared collection';
-    $('#viewWho').textContent = who;
+    $('#viewWho').textContent = `${who} · ${s.label}`;
     $('#viewBanner').hidden = false;
     document.title = `${who} · SpriteMaxing`;
     $('#viewExit').addEventListener('click', leaveSharedView);
@@ -629,9 +778,14 @@
   if (!viewing && !storageWorks()) showStorageWarning();
   // Another tab saved: adopt its progress so this tab's next save can't overwrite those changes.
   window.addEventListener('storage', e => {
-    if (viewing || e.key !== STORAGE_KEY) return;
-    progress = load();
-    rerenderAll();
+    if (viewing) return;
+    const s = SEASONS.find(x => x.storageKey === e.key);
+    if (!s) return;
+    ownProgress[s.id] = load(s.id);
+    if (s.id === season.id) {
+      progress = ownProgress[s.id];
+      rerenderAll();
+    }
   });
 
   // ---------- init ----------
@@ -640,12 +794,17 @@
   window.addEventListener('resize', syncToolbarHeight);
   syncToolbarHeight();
 
-  buildHead();
-  buildBody();
+  buildSeasonTabs();
   buildFilters();
-  refreshCounts();
-  applyFilters();
+  // Always open on the newest season, or on the season a share link is for.
+  switchSeason(viewing ? shared.seasonId : SEASONS[0].id);
 
-  // Shared with export.js (PNG/PDF collection export).
-  window.SpriteMaxing = { sprites, VARIANTS, STATUSES, statusOf, toast };
+  // Shared with export.js (PNG/PDF collection export). Getters, so it always sees the current season.
+  window.SpriteMaxing = {
+    get season() { return season; },
+    get sprites() { return season.sprites; },
+    get VARIANTS() { return season.variants; },
+    STATUSES, statusOf, toast,
+    hasArt: slug => !season.missing.has(slug),
+  };
 })();
