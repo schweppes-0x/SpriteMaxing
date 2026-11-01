@@ -5,7 +5,7 @@ Mark each one as **To be found**, **Indexed** or **Mastered**.
 
 **Live:** https://schweppes-0x.github.io/SpriteMaxing/ (GitHub Pages, deployed from `main`). Share links made there open for anyone.
 
-- **Season 5 · Treasure Hunters** (default tab): 11 Sprites in Normal, Fortune and Cursed (Gold arrives Nov 12). The roster comes from Epic's announcement. It is provisional until fortnite.gg datamines the season, so the sprites show placeholder art for now.
+- **Season 5 · Treasure Hunters** (default tab): 13 Sprites in Normal, Fortune and Cursed (Gold arrives Nov 12), 37 entries. Sweet Dreams' Fortune and Cursed versions are announced but not datamined yet; until then they show the sprite's silhouette in the quality colour, and you can already track them.
 - **Season 4 · Override:** 27 Sprites × 7 qualities (Normal, Gold, Cheat Master, Loot Hacker, Bounty Hunter, Trick or Treat, Quack), 162 entries. Mega Man has no special variants. Only Jonesy, Adventure, Bush, Klombo and Spooky Dash have a Quack variant.
 - Each season shows only its own quality columns. Missing combinations show as a striped "—" cell.
 - Progress is saved per season in the browser's `localStorage` (`spritesmaxing.<season>.v1`; Season 4 keeps the key it always had). **Backup** saves all seasons in one JSON file. **Restore** replaces the seasons in that file, and older single-season backups restore into Season 4. **Reset** only clears the season you are viewing.

@@ -7,15 +7,15 @@
   name: "Treasure Hunters",
   title: "Chapter 7 · Season 5 · Treasure Hunters",
   order: 5,
-  ggSeason: null,
-  meta: {"source":"Epic Games Treasure Hunters announcement (provisional)","updated":"2026-11-01"},
+  ggSeason: "43",
+  meta: {"source":"fortnite.gg","updated":"2026-11-01"},
   sprites: [
     {
       "id": "halfpeeld",
       "name": "Halfpeel'd",
-      "rarity": null,
+      "rarity": "rare",
       "order": 1,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "Marks elims on the map. Detection range grows with each level."
       ],
@@ -28,9 +28,9 @@
     {
       "id": "re-pete",
       "name": "Re-Pete",
-      "rarity": null,
+      "rarity": "rare",
       "order": 2,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "Faster reloads with a chance to refund ammo."
       ],
@@ -43,9 +43,9 @@
     {
       "id": "barry-ofish",
       "name": "Barry O'Fish",
-      "rarity": null,
+      "rarity": "rare",
       "order": 3,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "Spend less stamina while sprinting in water. Gain Slap effect at max level."
       ],
@@ -58,9 +58,9 @@
     {
       "id": "exmarks",
       "name": "Exmarks",
-      "rarity": null,
+      "rarity": "epic",
       "order": 4,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "Reveals nearby Treasure Maps and Wanted Posters. Spawns a Treasure Map at max level."
       ],
@@ -73,9 +73,9 @@
     {
       "id": "plundarrgh",
       "name": "Plundarrgh",
-      "rarity": null,
+      "rarity": "mythic",
       "order": 5,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "Open Chests for increased Pickaxe and movement speed."
       ],
@@ -88,9 +88,9 @@
     {
       "id": "chester",
       "name": "Chester",
-      "rarity": null,
+      "rarity": "epic",
       "order": 6,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "May spawn extra loot from Chests and cancels fall damage."
       ],
@@ -103,9 +103,9 @@
     {
       "id": "wayfinder",
       "name": "Wayfinder",
-      "rarity": null,
+      "rarity": "rare",
       "order": 7,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "Reveals nearby Sprites and spawns extra loot from Buried Chests."
       ],
@@ -118,9 +118,9 @@
     {
       "id": "kelper",
       "name": "Kelper",
-      "rarity": null,
+      "rarity": "epic",
       "order": 8,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "Restores health over time while in water. Bigger heals with each level."
       ],
@@ -133,9 +133,9 @@
     {
       "id": "lil-squibbly",
       "name": "Lil' Squibbly",
-      "rarity": null,
+      "rarity": "epic",
       "order": 9,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "Jump into fishing holes to catch fish and score bonus loot."
       ],
@@ -148,9 +148,9 @@
     {
       "id": "lil-flacko",
       "name": "Lil' Flacko",
-      "rarity": null,
+      "rarity": "legendary",
       "order": 10,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "Creates a small shockwave on landing, knocking back opponents."
       ],
@@ -163,9 +163,9 @@
     {
       "id": "sweet-dreams",
       "name": "Sweet Dreams",
-      "rarity": null,
+      "rarity": "mythic",
       "order": 11,
-      "isNew": true,
+      "isNew": false,
       "ability": [
         "Grants a random item with each level-up, bursting with Mythic loot at max level."
       ],
@@ -174,12 +174,42 @@
         "fortune": "fortune-sweet-dreams",
         "cursed": "cursed-sweet-dreams"
       }
+    },
+    {
+      "id": "lil-uzi-vert-jr",
+      "name": "Lil' Uzi Vert Jr.",
+      "rarity": "legendary",
+      "isNew": false,
+      "ability": [
+        "Generates a Chug Splash effect when restoring shields.",
+        "Decreased cooldown with each Level Up!"
+      ],
+      "variants": {
+        "normal": "lil-uzi-vert-jr",
+        "cursed": "cursed-lil-uzi-vert-jr",
+        "fortune": "fortune-lil-uzi-vert-jr"
+      },
+      "order": 12
+    },
+    {
+      "id": "transponder-snail",
+      "name": "Transponder Snail",
+      "rarity": "legendary",
+      "isNew": false,
+      "ability": [
+        "Grants extra resources on pickup, with Teammates who also have this Sprite equipped receiving some extra resources as well!",
+        "Increased amount of resources received at each Level Up!"
+      ],
+      "variants": {
+        "normal": "transponder-snail"
+      },
+      "order": 13
     }
   ],
   // Permanent fortnite.gg sprite IDs (share links + backups). Never renumber; new sprites just get new IDs.
-  ids: {},
+  ids: {"halfpeeld":280,"fortune-halfpeeld":281,"cursed-halfpeeld":282,"re-pete":283,"cursed-re-pete":284,"fortune-re-pete":285,"barry-ofish":286,"cursed-barry-ofish":287,"fortune-barry-ofish":288,"chester":289,"cursed-chester":290,"fortune-chester":291,"exmarks":292,"fortune-exmarks":293,"cursed-exmarks":294,"wayfinder":295,"cursed-wayfinder":296,"fortune-wayfinder":297,"kelper":298,"fortune-kelper":299,"cursed-kelper":300,"sweet-dreams":301,"lil-squibbly":302,"cursed-lil-squibbly":303,"fortune-lil-squibbly":304,"lil-flacko":305,"fortune-lil-flacko":306,"cursed-lil-flacko":307,"lil-uzi-vert-jr":308,"cursed-lil-uzi-vert-jr":309,"fortune-lil-uzi-vert-jr":310,"plundarrgh":311,"cursed-plundarrgh":312,"fortune-plundarrgh":313,"transponder-snail":314},
   // Qualities found after app.js was written; shown with a generic style.
   extras: [],
   // Variants whose icon is not available yet (shown with placeholder art).
-  missingIcons: ["halfpeeld","fortune-halfpeeld","cursed-halfpeeld","re-pete","fortune-re-pete","cursed-re-pete","barry-ofish","fortune-barry-ofish","cursed-barry-ofish","exmarks","fortune-exmarks","cursed-exmarks","plundarrgh","fortune-plundarrgh","cursed-plundarrgh","chester","fortune-chester","cursed-chester","wayfinder","fortune-wayfinder","cursed-wayfinder","kelper","fortune-kelper","cursed-kelper","lil-squibbly","fortune-lil-squibbly","cursed-lil-squibbly","lil-flacko","fortune-lil-flacko","cursed-lil-flacko","sweet-dreams","fortune-sweet-dreams","cursed-sweet-dreams"],
+  missingIcons: ["fortune-sweet-dreams","cursed-sweet-dreams"],
 });

@@ -57,9 +57,9 @@
     for (const key of present) {
       if (!variants.some(v => v.key === key)) variants.push(genericQuality(key, key[0].toUpperCase() + key.slice(1)));
     }
-    // In-game numbered order when we have it, otherwise rarest first, then by name.
+    // Rarest first (sprites without a known rarity last), then the season's listed order, then by name.
     const sprites = raw.sprites.slice().sort((a, b) =>
-      (a.order ?? Infinity) - (b.order ?? Infinity) || rarityRank(a.rarity) - rarityRank(b.rarity) || a.name.localeCompare(b.name));
+      rarityRank(a.rarity) - rarityRank(b.rarity) || (a.order ?? Infinity) - (b.order ?? Infinity) || a.name.localeCompare(b.name));
     const ids = raw.ids || {};
     return {
       ...raw, variants, sprites, ids,
@@ -203,13 +203,27 @@
     const words = name.replace(/['’]/g, '').split(/[^A-Za-z0-9]+/).filter(Boolean);
     return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] || '?').slice(0, 2)).toUpperCase();
   }
-  // Icon for a variant, or placeholder art when the icon hasn't been datamined yet.
+  // Another variant of the same sprite that does have art (Normal first), for placeholder silhouettes.
+  function siblingArt(sprite) {
+    const slugs = [sprite.variants.normal, ...Object.values(sprite.variants)].filter(Boolean);
+    return slugs.find(sl => !season.missing.has(sl)) || null;
+  }
+  // Icon for a variant, or placeholder art when the icon hasn't been datamined yet: the sprite's own
+  // silhouette tinted in the quality colour when a sibling icon exists, else a monogram.
   function spriteArt(sprite, slug, alt, lazy = true) {
     if (season.missing.has(slug)) {
       const ph = el('span', 'ph');
       ph.setAttribute('role', 'img');
       ph.setAttribute('aria-label', `${alt} (art not available yet)`);
-      ph.append(el('span', 'ph-mono', monogram(sprite.name)), el('span', 'ph-note', 'Art soon'));
+      const sib = siblingArt(sprite);
+      if (sib) {
+        ph.classList.add('ph-ghost');
+        const sil = el('span', 'ph-sil');
+        sil.style.setProperty('--sil', `url("img/${sib}.webp")`);
+        ph.append(sil, el('span', 'ph-q', '?'), el('span', 'ph-note', 'Art soon'));
+      } else {
+        ph.append(el('span', 'ph-mono', monogram(sprite.name)), el('span', 'ph-note', 'Art soon'));
+      }
       return ph;
     }
     const img = el('img');
@@ -514,9 +528,14 @@
     // A season whose art hasn't been datamined yet gets a short explanation above the grid.
     const note = $('#seasonNote');
     note.hidden = !season.missing.size;
-    if (season.missing.size) {
+    if (season.missing.size === season.allSlugs.length) {
       note.textContent = `${season.label} just dropped. Art for its sprites isn't datamined yet, so they show placeholders. ` +
         'Real icons (and new qualities like Gold) are added in the next data update, and your progress is kept.';
+    } else if (season.missing.size) {
+      const n = season.missing.size;
+      note.textContent = `${n} ${season.label} variant${n === 1 ? ' has' : 's have'} been announced but not datamined yet, so ` +
+        `${n === 1 ? 'it shows' : 'they show'} the sprite's silhouette. You can already track ${n === 1 ? 'it' : 'them'}; ` +
+        'the real art arrives with the next data update.';
     }
     buildHead();
     buildBody();
@@ -806,5 +825,6 @@
     get VARIANTS() { return season.variants; },
     STATUSES, statusOf, toast,
     hasArt: slug => !season.missing.has(slug),
+    siblingArt: sprite => siblingArt(sprite),
   };
 })();

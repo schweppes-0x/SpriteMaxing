@@ -136,7 +136,9 @@ function parseAbility(html) {
   return i >= 0 && j > i ? t.slice(i + 4, j) : [];
 }
 
-const slugFromHref = href => href.split('/').pop().replace(/^\d+-/, '').replace(/-sprite$/, '');
+// fortnite.gg URL -> slug, e.g. "/sprites/308-lil'-uzi-vert-jr." -> "lil-uzi-vert-jr" (safe as a file name).
+const slugFromHref = href => decodeURIComponent(href.split('/').pop()).replace(/^\d+-/, '').replace(/-sprite$/, '')
+  .toLowerCase().replace(/['’.]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const isWebp = buf => buf.length > 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP';
 const hasIcon = slug => fs.existsSync(path.join(IMG_DIR, `${slug}.webp`));
 

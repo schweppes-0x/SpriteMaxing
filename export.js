@@ -66,7 +66,10 @@
   async function prepare(sel) {
     const srcs = ['img/klombo.webp'];
     for (const s of sel.rows) for (const v of sel.cols) {
-      if (sel.has(s, v) && SM.hasArt(s.variants[v.key])) srcs.push(`img/${s.variants[v.key]}.webp`);
+      if (!sel.has(s, v)) continue;
+      // Variants without art are drawn as a silhouette of a sibling icon, so load that instead.
+      const slug = SM.hasArt(s.variants[v.key]) ? s.variants[v.key] : SM.siblingArt(s);
+      if (slug) srcs.push(`img/${slug}.webp`);
     }
     const fonts = ['700 20px "Chakra Petch"', '600 12px "Space Grotesk"', '400 12px "Space Grotesk"']
       .map(f => document.fonts.load(f).catch(() => null));
@@ -238,6 +241,35 @@
     ctx.setLineDash([]);
   }
 
+  // Placeholder for a variant without art: its sibling icon as a silhouette in the quality colour, plus "?".
+  function drawSilhouette(ctx, img, x, y, size, vc, dim, t) {
+    const px = Math.round(size * PDF_SCALE);
+    const off = document.createElement('canvas');
+    off.width = off.height = px;
+    const o = off.getContext('2d');
+    o.drawImage(img, 0, 0, px, px);
+    o.globalCompositeOperation = 'source-in';
+    const g = o.createLinearGradient(0, 0, px, px);
+    g.addColorStop(0, vc); g.addColorStop(1, rgba(vc, 0.55));
+    o.fillStyle = g;
+    o.fillRect(0, 0, px, px);
+    ctx.save();
+    ctx.globalAlpha = dim ? 0.55 : 0.9;
+    ctx.shadowColor = rgba(vc, 0.6); ctx.shadowBlur = 12;
+    ctx.drawImage(off, x + size * 0.11, y + size * 0.05, size * 0.78, size * 0.78);
+    ctx.restore();
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `700 ${Math.round(size * 0.3)}px ${DISPLAY}`;
+    ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = 8;
+    ctx.fillStyle = '#fff';
+    ctx.fillText('?', x + size / 2, y + size * 0.42);
+    ctx.restore();
+    ctx.font = `700 9px ${BODY}`; ctx.fillStyle = t.muted; ctx.textAlign = 'center';
+    ctx.fillText('ART SOON', x + size / 2, y + size + 2);
+    ctx.textAlign = 'left';
+  }
+
   // Monogram disc for sprites whose icon hasn't been datamined yet (matches the .ph style on the page).
   function drawPlaceholder(ctx, cx, cy, r, name, vc, dim, t) {
     const words = name.replace(/['’]/g, '').split(/[^A-Za-z0-9]+/).filter(Boolean);
@@ -285,6 +317,8 @@
       if (st === 'missing') ctx.filter = 'grayscale(0.85) brightness(0.7)';
       ctx.drawImage(img, x + (CELL_W - IMG) / 2, y + 8, IMG, IMG);
       ctx.filter = 'none';
+    } else if (!SM.hasArt(slug) && SM.siblingArt(s) && loaded.get(`img/${SM.siblingArt(s)}.webp`)) {
+      drawSilhouette(ctx, loaded.get(`img/${SM.siblingArt(s)}.webp`), x + (CELL_W - IMG) / 2, y + 8, IMG, vc, st === 'missing', t);
     } else if (!SM.hasArt(slug)) {
       drawPlaceholder(ctx, x + CELL_W / 2, y + 8 + IMG / 2, IMG * 0.32, s.name, vc, st === 'missing', t);
     }
